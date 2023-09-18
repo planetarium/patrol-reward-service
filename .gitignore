@@ -110,3 +110,5 @@ modules.xml
 .DS_Store
 # End of https://www.toptal.com/developers/gitignore/api/dotnetcore,jetbrains+all
 
+*.idea
+*.DotSettings.user

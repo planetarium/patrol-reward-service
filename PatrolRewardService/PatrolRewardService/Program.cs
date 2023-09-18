@@ -1,12 +1,7 @@
-using System;
-using HotChocolate.Data;
-using Libplanet.Crypto;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Options;
+using PatrolRewardService.GraphqlTypes;
 
 namespace PatrolRewardService;
 
@@ -17,7 +12,7 @@ internal static class Program
         var host = CreateHostBuilder(args).Build();
         using (var scope = host.Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<ServiceContext>();
+            var db = scope.ServiceProvider.GetRequiredService<RewardDbContext>();
             Console.WriteLine("Migrate db.");
             db.Database.Migrate();
         }
@@ -29,18 +24,28 @@ internal static class Program
     public static IHostBuilder CreateHostBuilder(string[] args)
     {
         return Host.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration((_, config) =>
+            {
+                IConfiguration configRoot = config.Build();
+                GraphqlClientOptions graphqlClientOptions = new();
+                configRoot.GetSection(GraphqlClientOptions.GraphqlClientConfig)
+                    .Bind(graphqlClientOptions);
+                SignerOptions signerOptions = new();
+                configRoot.GetSection(SignerOptions.SignerConfig)
+                    .Bind(signerOptions);
+            })
             .ConfigureWebHostDefaults(webBuilder => webBuilder.UseStartup<StartUp>());
     }
 }
 
 public class StartUp
 {
-    public IConfiguration Configuration { get; }
-
     public StartUp(IConfiguration configuration)
     {
         Configuration = configuration;
     }
+
+    public IConfiguration Configuration { get; }
 
     public void ConfigureServices(IServiceCollection services)
     {
@@ -51,9 +56,12 @@ public class StartUp
         services.AddSwaggerGen();
 
         // Database
-        services.AddDbContextFactory<ServiceContext>(options =>
+        services.AddDbContextFactory<RewardDbContext>(options =>
         {
-            options.UseNpgsql(Configuration.GetConnectionString("PatrolReward"));
+            options
+                .UseNpgsql(Configuration.GetConnectionString("PatrolReward"))
+                .UseSnakeCaseNamingConvention()
+                .ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
         });
 
         // Graphql
