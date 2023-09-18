@@ -64,11 +64,40 @@ public class StartUp
                 .ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
         });
 
+        // GraphqlClient
+        services
+            .AddSingleton<NineChroniclesClient>(sp =>
+            {
+                var configRoot = sp.GetRequiredService<IConfiguration>();
+                GraphqlClientOptions graphqlClientOptions = new();
+                configRoot.GetSection(GraphqlClientOptions.GraphqlClientConfig)
+                    .Bind(graphqlClientOptions);
+                var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+                return new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(graphqlClientOptions),
+                    loggerFactory);
+            });
+
         // Graphql
         services
             .AddGraphQLServer()
-            .RegisterDbContext<ServiceContext>(DbContextKind.Pooled)
-            .AddQueryType<QueryType>();
+            .RegisterService<NineChroniclesClient>()
+            .RegisterService<Signer>()
+            .RegisterDbContext<RewardDbContext>(DbContextKind.Pooled)
+            .AddQueryType<QueryType>()
+            .AddMutationType<MutationType>()
+            .AddErrorFilter<GraphqlErrorFilter>();
+
+        // Signer
+        services.AddSingleton<Signer>(_ =>
+        {
+            SignerOptions signerOptions = new();
+            Configuration.GetSection(SignerOptions.SignerConfig)
+                .Bind(signerOptions);
+            return new Signer(new OptionsWrapper<SignerOptions>(signerOptions));
+        });
+
+        // Worker
+        services.AddHostedService<TransactionWorker>();
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -88,5 +117,13 @@ public class StartUp
             endpoints.MapGraphQL();
             endpoints.MapControllers();
         });
+    }
+
+    public class GraphqlErrorFilter : IErrorFilter
+    {
+        public IError OnError(IError error)
+        {
+            return error.WithMessage(error.Message);
+        }
     }
 }

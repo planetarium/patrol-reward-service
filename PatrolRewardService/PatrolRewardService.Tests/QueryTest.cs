@@ -7,7 +7,8 @@ namespace PatrolRewardService.Tests;
 
 public class QueryTest
 {
-    private readonly ServiceContext _context;
+    private readonly RewardDbContext _context;
+    private readonly string _conn;
 
     public QueryTest()
     {
@@ -20,8 +21,11 @@ public class QueryTest
             connectionString += $"Password={pw};";
         }
 
-        _context = new ServiceContext(new DbContextOptionsBuilder<ServiceContext>()
-            .UseNpgsql(connectionString).Options);
+        _conn = connectionString;
+        _context = new RewardDbContext(new DbContextOptionsBuilder<RewardDbContext>()
+            .UseNpgsql(connectionString)
+            .EnableSensitiveDataLogging()
+            .Options);
     }
 
     [Theory]
@@ -31,7 +35,7 @@ public class QueryTest
     {
         var avatarAddress = new PrivateKey().ToAddress();
         var agentAddress = new PrivateKey().ToAddress();
-        var player = new PlayerModel
+        var player = new AvatarModel
         {
             AvatarAddress = avatarAddress,
             AgentAddress = agentAddress,
@@ -40,13 +44,12 @@ public class QueryTest
 
         await _context.Database.EnsureDeletedAsync();
         await _context.Database.EnsureCreatedAsync();
-        _context.Players.Add(player);
+        _context.Avatars.Add(player);
         await _context.SaveChangesAsync();
-        Assert.Single(_context.Players);
-
-        var query = new Query();
-        var address = hex ? avatarAddress.ToHex() : avatarAddress.ToString();
-        var result = query.GetPlayer(_context, address);
+        Assert.Single(_context.Avatars);
+        var serializedAvatarAddress = hex ? avatarAddress.ToHex() : avatarAddress.ToString();
+        var serializedAgentAddress = hex ? agentAddress.ToHex() : agentAddress.ToString();
+        var result = Query.GetAvatar(_context, serializedAvatarAddress, serializedAgentAddress);
         Assert.NotNull(result);
         Assert.Equal(avatarAddress, result.AvatarAddress);
         await _context.Database.EnsureDeletedAsync();
