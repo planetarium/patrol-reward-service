@@ -12,6 +12,8 @@ public class RewardPolicyModel
 
     public int MinimumLevel { get; set; }
 
+    public int? MaxLevel { get; set; } = null;
+
     public TimeSpan MinimumRequiredInterval { get; set; }
 
     public List<RewardBaseModel> Rewards { get; set; } = new();

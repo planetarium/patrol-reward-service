@@ -8,7 +8,6 @@ namespace PatrolRewardService.Tests;
 public class QueryTest
 {
     private readonly RewardDbContext _context;
-    private readonly string _conn;
 
     public QueryTest()
     {
@@ -21,7 +20,6 @@ public class QueryTest
             connectionString += $"Password={pw};";
         }
 
-        _conn = connectionString;
         _context = new RewardDbContext(new DbContextOptionsBuilder<RewardDbContext>()
             .UseNpgsql(connectionString)
             .EnableSensitiveDataLogging()
@@ -53,5 +51,40 @@ public class QueryTest
         Assert.NotNull(result);
         Assert.Equal(avatarAddress, result.AvatarAddress);
         await _context.Database.EnsureDeletedAsync();
+    }
+
+    [Theory]
+    [InlineData(0, 50)]
+    [InlineData(50, 50)]
+    [InlineData(149, 50)]
+    [InlineData(150, 150)]
+    [InlineData(250, 250)]
+    [InlineData(350, 250)]
+    public async Task GetPolicy(int level, int expectedLevel)
+    {
+        await _context.Database.EnsureDeletedAsync();
+        await _context.Database.EnsureCreatedAsync();
+        foreach (var (minimumLevel, maxLevel) in new (int, int?)[]
+                 {
+                     (50, 149),
+                     (150, 249),
+                     (250, null)
+                 })
+        {
+            var policy = new RewardPolicyModel
+            {
+                Free = true,
+                MinimumRequiredInterval = TimeSpan.FromSeconds(0),
+                Activate = true,
+                MinimumLevel = minimumLevel,
+                MaxLevel = maxLevel,
+            };
+            await _context.RewardPolicies.AddAsync(policy);
+        }
+
+        await _context.SaveChangesAsync();
+
+        var result = Query.GetPolicy(_context, true, level);
+        Assert.Equal(expectedLevel, result.MinimumLevel);
     }
 }

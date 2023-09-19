@@ -41,7 +41,7 @@ public class Mutation
     }
 
     public static async Task<int> PutClaimPolicy([Service] RewardDbContext rewardDbContext,
-        List<RewardBaseModel> rewards, bool free, TimeSpan interval, bool activate, int minimumLevel)
+        List<RewardBaseModel> rewards, bool free, TimeSpan interval, bool activate, int minimumLevel, int? maxLevel = null)
     {
         var policy = await rewardDbContext
             .RewardPolicies
@@ -55,13 +55,15 @@ public class Mutation
                 Free = free,
                 MinimumRequiredInterval = interval,
                 Activate = activate,
-                MinimumLevel = minimumLevel
+                MinimumLevel = minimumLevel,
+                MaxLevel = maxLevel,
             };
             await rewardDbContext.RewardPolicies.AddAsync(policy);
         }
         else
         {
             policy.Rewards = rewards;
+            policy.MaxLevel = maxLevel;
             rewardDbContext.RewardPolicies.Update(policy);
         }
 
