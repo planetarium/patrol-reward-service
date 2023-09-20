@@ -132,7 +132,8 @@ public class Mutation
         policy.Claims.Add(claim);
 
         // prepare action plain value.
-        var action = claim.ToAction(avatarState.AgentAddress);
+        var memo = $"patrol reward {avatarAddress} / {avatar.ClaimCount}";
+        var action = claim.ToAction(avatarState.Address, avatarState.AgentAddress, memo);
         long nonce = 0L;
         try
         {

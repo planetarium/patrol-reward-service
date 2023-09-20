@@ -30,7 +30,7 @@ public class ClaimModel
     public TxId TxId { get; set; }
     public TransactionModel Transaction { get; set; }
 
-    public UnloadFromMyGarages ToAction(Address agentAddress, string? memo = null)
+    public UnloadFromMyGarages ToAction(Address avatarAddress, Address agentAddress, string? memo = null)
     {
         List<(Address, FungibleAssetValue)> fungibleAssetValues = new();
         List<(HashDigest<SHA256>, int)> fungibleIdAndCounts = new();
@@ -56,7 +56,7 @@ public class ClaimModel
             }
 
         if (!fungibleIdAndCounts.Any() && !fungibleAssetValues.Any()) throw new ClaimIntervalException();
-        return new UnloadFromMyGarages(AvatarAddress, fungibleIdAndCounts: fungibleIdAndCounts,
+        return new UnloadFromMyGarages(avatarAddress, fungibleIdAndCounts: fungibleIdAndCounts,
             fungibleAssetValues: fungibleAssetValues, memo: memo);
     }
 }
