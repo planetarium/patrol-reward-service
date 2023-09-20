@@ -12,5 +12,8 @@ public class QueryType : ObjectType<Query>
             .Argument("free", a => a.Type<NonNullType<BooleanType>>())
             .Argument("level", a => a.Type<NonNullType<IntType>>())
             .Type<RewardPolicyType>();
+        descriptor.Field(f => Query.GetReward(default!, default!))
+            .Argument("rewardInput", a => a.Type<RewardInputType>())
+            .Type<RewardType>();
     }
 }

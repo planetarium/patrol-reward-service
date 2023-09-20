@@ -12,6 +12,7 @@ namespace PatrolRewardService.Tests;
 public class MutationTest
 {
     private readonly RewardDbContext _context;
+    private readonly string _conn;
 
     public MutationTest()
     {
@@ -24,6 +25,7 @@ public class MutationTest
             connectionString += $"Password={pw};";
         }
 
+        _conn = connectionString;
         _context = new RewardDbContext(new DbContextOptionsBuilder<RewardDbContext>()
             .UseNpgsql(connectionString).Options);
     }
@@ -79,6 +81,71 @@ public class MutationTest
         Assert.NotNull(result);
         Assert.Equal(avatarAddress, result.AvatarAddress);
         Assert.True(result.Level > 0);
+        await _context.Database.EnsureDeletedAsync();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PutClaimPolicy(bool exist)
+    {
+        await _context.Database.EnsureDeletedAsync();
+        await _context.Database.EnsureCreatedAsync();
+        var apPotion = new FungibleItemRewardModel
+        {
+            ItemId = 500000,
+            FungibleId = "1",
+            PerInterval = 1,
+            RewardInterval = TimeSpan.FromDays(1)
+        };
+        var hourGlass = new FungibleItemRewardModel
+        {
+            ItemId = 400000,
+            FungibleId = "2",
+            PerInterval = 1,
+            RewardInterval = TimeSpan.FromHours(6),
+        };
+        var crystal = new FungibleAssetValueRewardModel
+        {
+            Currency = "CRYSTAL",
+            PerInterval = 1,
+            RewardInterval = TimeSpan.FromMinutes(5),
+        };
+        var interval = TimeSpan.FromSeconds(5);
+        int minimumLevel = 50;
+        if (exist)
+        {
+            var policy = new RewardPolicyModel
+            {
+                Rewards = new List<RewardBaseModel>
+                {
+                    apPotion,
+                    hourGlass,
+                    crystal,
+                },
+                Free = true,
+                // 10 minutes
+                MinimumRequiredInterval = interval,
+                Activate = true,
+                MinimumLevel = minimumLevel,
+            };
+            await _context.RewardPolicies.AddAsync(policy);
+            await _context.SaveChangesAsync();
+        }
+
+        var context = Fixtures.GetDbContext(_conn);
+        var rewards = exist
+            ? context.Rewards.ToList()
+            : new List<RewardBaseModel>
+            {
+                apPotion,
+                hourGlass,
+                crystal,
+            };
+        await Mutation.PutClaimPolicy(context, rewards, true, interval, true, minimumLevel);
+        var updatedPolicy = await context.RewardPolicies.Include(r => r.Rewards).SingleAsync();
+        Assert.Equal(3, updatedPolicy.Rewards.Count);
+        Assert.Equal(3, context.Rewards.Count());
         await _context.Database.EnsureDeletedAsync();
     }
 }

@@ -32,6 +32,11 @@ public class RewardInput
             RewardInterval = rewardInterval
         };
     }
+
+    public bool IsItemReward()
+    {
+        return string.IsNullOrEmpty(Currency) && string.IsNullOrEmpty(Ticker);
+    }
 }
 
 public class RewardInputType : InputObjectType<RewardInput>

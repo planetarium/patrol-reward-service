@@ -45,7 +45,7 @@ public class Mutation
     {
         var policy = await rewardDbContext
             .RewardPolicies
-            .AsNoTracking()
+            .Include(r => r.Rewards)
             .FirstOrDefaultAsync(r => r.Free == free && r.Activate == activate && r.MinimumLevel == minimumLevel);
         if (policy is null)
         {
@@ -62,6 +62,7 @@ public class Mutation
         }
         else
         {
+            policy.Rewards.Clear();
             policy.Rewards = rewards;
             policy.MaxLevel = maxLevel;
             policy.MinimumRequiredInterval = interval;

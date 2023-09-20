@@ -1,3 +1,5 @@
+using PatrolRewardService.Models;
+
 namespace PatrolRewardService.GraphqlTypes;
 
 public class MutationType : ObjectType<Mutation>
@@ -29,13 +31,18 @@ public class MutationType : ObjectType<Mutation>
             .Resolve(context =>
             {
                 var rewardInputs = context.ArgumentValue<List<RewardInput>>("rewards");
-                var rewards = rewardInputs.Select(r => r.ToReward()).ToList();
                 var free = context.ArgumentValue<bool>("free");
                 var interval = context.ArgumentValue<TimeSpan>("interval");
                 var activate = context.ArgumentValue<bool>("activate");
                 var minimumLevel = context.ArgumentValue<int>("minimumLevel");
                 var maxLevel = context.ArgumentValue<int?>("maxLevel");
                 var rewardDbContext = context.Service<RewardDbContext>();
+                var rewards = new List<RewardBaseModel>();
+                foreach (var rewardInput in rewardInputs)
+                {
+                    var reward = Query.GetReward(rewardDbContext, rewardInput) ?? rewardInput.ToReward();
+                    rewards.Add(reward);
+                }
                 return Mutation.PutClaimPolicy(rewardDbContext, rewards, free, interval, activate, minimumLevel, maxLevel);
             });
         descriptor
