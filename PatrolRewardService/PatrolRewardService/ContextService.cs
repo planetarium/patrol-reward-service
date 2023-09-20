@@ -1,4 +1,5 @@
 using Libplanet.Crypto;
+using Libplanet.Types.Tx;
 using Microsoft.EntityFrameworkCore;
 using PatrolRewardService.GraphqlTypes;
 using PatrolRewardService.Models;
@@ -116,6 +117,14 @@ public class ContextService : IAsyncDisposable, IDisposable
         return await _dbContext
             .Transactions
             .FirstOrDefaultAsync(t => t.AvatarAddress == avatar.AvatarAddress && t.ClaimCount == avatar.ClaimCount);
+    }
+
+    public async Task<TransactionModel?> GetTransaction(TxId txId)
+    {
+        return await _dbContext
+            .Transactions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.TxId == txId);
     }
 
     public async Task<long> GetNonce()

@@ -1,4 +1,5 @@
 using Libplanet.Crypto;
+using Libplanet.Types.Tx;
 using Microsoft.EntityFrameworkCore;
 using PatrolRewardService.GraphqlTypes;
 using PatrolRewardService.Models;
@@ -21,5 +22,10 @@ public class Query
     public static RewardBaseModel? GetReward(ContextService contextService, RewardInput rewardInput)
     {
         return contextService.GetReward(rewardInput);
+    }
+
+    public static async Task<TransactionModel?> GetTransaction(ContextService contextService, TxId txId)
+    {
+        return await contextService.GetTransaction(txId);
     }
 }

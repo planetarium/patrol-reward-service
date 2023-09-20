@@ -14,6 +14,9 @@ public class TransactionType : ObjectType<TransactionModel>
             .Type<NonNullType<AvatarModelType>>();
         descriptor
             .Field(f => f.TxId)
-            .Type<NonNullType<StringType>>();
+            .Type<NonNullType<TxIdType>>();
+        descriptor
+            .Field(f => f.Claim)
+            .Ignore();
     }
 }
