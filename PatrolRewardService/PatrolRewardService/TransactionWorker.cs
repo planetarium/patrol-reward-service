@@ -30,7 +30,7 @@ public class TransactionWorker : BackgroundService
     public static async Task UpdateTx(RewardDbContext dbContext, NineChroniclesClient client,
         CancellationToken stoppingToken)
     {
-        var transactions = dbContext.Transactions.AsNoTracking()
+        var transactions = dbContext.Transactions
             .Where(p => p.Result == TransactionStatus.STAGING).ToList();
         foreach (var tx in transactions)
         {

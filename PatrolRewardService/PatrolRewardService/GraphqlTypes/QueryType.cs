@@ -4,7 +4,7 @@ public class QueryType : ObjectType<Query>
 {
     protected override void Configure(IObjectTypeDescriptor<Query> descriptor)
     {
-        descriptor.Field(f => Query.GetAvatar(default!, default!, default!))
+        descriptor.Field(f => Query.GetAvatar(default!, default!, default!, default!))
             .Argument("avatarAddress", a => a.Type<NonNullType<AddressType>>())
             .Argument("agentAddress", a => a.Type<NonNullType<AddressType>>())
             .Type<AvatarModelType>();
