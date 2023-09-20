@@ -1,4 +1,5 @@
 using Libplanet.Types.Tx;
+using Libplanet.Crypto;
 using PatrolRewardService.Models;
 
 namespace PatrolRewardService.GraphqlTypes;
@@ -77,5 +78,17 @@ public class MutationType : ObjectType<Mutation>
                 return Mutation.RetryTransaction(contextService, signer, client, txId, password);
             })
             .Type<TxIdType>();
+        descriptor
+            .Field("setAvatarTimestamp")
+            .Argument("avatarAddress", a => a.Type<NonNullType<AddressType>>())
+            .Argument("timeStamp", a => a.Type<DateTimeType>())
+            .Resolve(context =>
+            {
+                var avatarAddress = context.ArgumentValue<string>("avatarAddress");
+                var timeStamp = context.ArgumentValue<DateTime?>("timeStamp");
+                var rewardDbContext = context.Service<RewardDbContext>();
+                return Mutation.SetAvatarTimestamp(rewardDbContext, avatarAddress, timeStamp);
+            })
+            .Type<DateTimeType>();
     }
 }
