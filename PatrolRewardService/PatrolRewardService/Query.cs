@@ -7,9 +7,13 @@ namespace PatrolRewardService;
 public class Query
 {
     public static AvatarModel? GetAvatar([Service] RewardDbContext rewardDbContext, string avatarAddress,
-        string agentAddress)
+        string agentAddress, bool track = false)
     {
-        IQueryable<AvatarModel> baseQuery = rewardDbContext.Avatars.AsNoTracking();
+        IQueryable<AvatarModel> baseQuery = rewardDbContext.Avatars;
+        if (!track)
+        {
+            baseQuery = baseQuery.AsNoTracking();
+        }
         return baseQuery.FirstOrDefault(p =>
             p.AvatarAddress == new Address(avatarAddress) && p.AgentAddress == new Address(agentAddress));
     }

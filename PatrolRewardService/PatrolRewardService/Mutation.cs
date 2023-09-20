@@ -14,7 +14,7 @@ public class Mutation
         string avatarAddress, string agentAddress, bool save = true)
     {
         var avatarExist = true;
-        var avatar = Query.GetAvatar(rewardDbContext, avatarAddress, agentAddress);
+        var avatar = Query.GetAvatar(rewardDbContext, avatarAddress, agentAddress, true);
         if (avatar is null)
         {
             avatarExist = false;
@@ -82,7 +82,7 @@ public class Mutation
     )
     {
         // Check registered player.
-        var avatar = Query.GetAvatar(rewardDbContext, avatarAddress, agentAddress);
+        var avatar = Query.GetAvatar(rewardDbContext, avatarAddress, agentAddress, true);
         if (avatar is null) throw new GraphQLException("Avatar not found. register avatar first.");
 
         // Check duplicate claim.
@@ -133,7 +133,15 @@ public class Mutation
 
         // prepare action plain value.
         var action = claim.ToAction(avatarState.AgentAddress);
-        var nonce = Math.Max(0, await rewardDbContext.Transactions.Select(p => p.Nonce).DefaultIfEmpty().MaxAsync());
+        long nonce = 0L;
+        try
+        {
+            nonce = await rewardDbContext.Transactions.Select(p => p.Nonce).MaxAsync() + 1;
+        }
+        catch (InvalidOperationException)
+        {
+            //pass
+        }
         var tx = signer.Sign(nonce, new[] {action}, 1 * Currencies.Mead, 4L, now);
         transaction.TxId = tx.Id;
         transaction.Payload = Convert.ToBase64String(tx.Serialize());
