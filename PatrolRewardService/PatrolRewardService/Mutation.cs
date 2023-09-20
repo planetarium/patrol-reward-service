@@ -64,6 +64,7 @@ public class Mutation
         {
             policy.Rewards = rewards;
             policy.MaxLevel = maxLevel;
+            policy.MinimumRequiredInterval = interval;
             rewardDbContext.RewardPolicies.Update(policy);
         }
 
