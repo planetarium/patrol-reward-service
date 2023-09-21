@@ -55,7 +55,7 @@ public class ClaimModel
                     break;
             }
 
-        if (!fungibleIdAndCounts.Any() && !fungibleAssetValues.Any()) throw new ClaimIntervalException();
+        if (!fungibleIdAndCounts.Any() && !fungibleAssetValues.Any()) throw new ClaimIntervalException("no reward available. please wait more time.");
         return new UnloadFromMyGarages(avatarAddress, fungibleIdAndCounts: fungibleIdAndCounts,
             fungibleAssetValues: fungibleAssetValues, memo: memo);
     }

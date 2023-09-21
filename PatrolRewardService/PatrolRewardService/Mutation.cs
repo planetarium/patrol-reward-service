@@ -113,7 +113,7 @@ public class Mutation
                 ClaimCount = avatar.ClaimCount
             };
         else
-            throw new ClaimIntervalException();
+            throw new ClaimIntervalException($"required minimum interval time {policy.MinimumRequiredInterval}.");
 
         // prepare claim.
         avatar.LastClaimedAt = now;

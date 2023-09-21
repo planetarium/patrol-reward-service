@@ -123,7 +123,8 @@ public class StartUp
     {
         public IError OnError(IError error)
         {
-            return error.WithMessage(error.Message);
+            var msg = error.Exception?.Message ?? error.Message;
+            return error.WithMessage(msg);
         }
     }
 }
