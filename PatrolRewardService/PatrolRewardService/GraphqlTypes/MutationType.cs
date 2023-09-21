@@ -15,9 +15,9 @@ public class MutationType : ObjectType<Mutation>
             {
                 var avatarAddress = context.ArgumentValue<string>("avatarAddress");
                 var agentAddress = context.ArgumentValue<string>("agentAddress");
-                var rewardDbContext = context.Service<RewardDbContext>();
+                var contextService = context.Service<ContextService>();
                 var client = context.Service<NineChroniclesClient>();
-                return Mutation.PutAvatar(rewardDbContext, client, avatarAddress, agentAddress);
+                return Mutation.PutAvatar(contextService, client, avatarAddress, agentAddress);
             });
         descriptor
             .Field("putRewardPolicy")
@@ -36,14 +36,14 @@ public class MutationType : ObjectType<Mutation>
                 var activate = context.ArgumentValue<bool>("activate");
                 var minimumLevel = context.ArgumentValue<int>("minimumLevel");
                 var maxLevel = context.ArgumentValue<int?>("maxLevel");
-                var rewardDbContext = context.Service<RewardDbContext>();
+                var contextService = context.Service<ContextService>();
                 var rewards = new List<RewardBaseModel>();
                 foreach (var rewardInput in rewardInputs)
                 {
-                    var reward = Query.GetReward(rewardDbContext, rewardInput) ?? rewardInput.ToReward();
+                    var reward = Query.GetReward(contextService, rewardInput) ?? rewardInput.ToReward();
                     rewards.Add(reward);
                 }
-                return Mutation.PutClaimPolicy(rewardDbContext, rewards, free, interval, activate, minimumLevel, maxLevel);
+                return Mutation.PutClaimPolicy(contextService, rewards, free, interval, activate, minimumLevel, maxLevel);
             });
         descriptor
             .Field("claim")
@@ -54,10 +54,10 @@ public class MutationType : ObjectType<Mutation>
             {
                 var avatarAddress = context.ArgumentValue<string>("avatarAddress");
                 var agentAddress = context.ArgumentValue<string>("agentAddress");
-                var rewardDbContext = context.Service<RewardDbContext>();
+                var contextService = context.Service<ContextService>();
                 var client = context.Service<NineChroniclesClient>();
                 var signer = context.Service<Signer>();
-                return Mutation.Claim(rewardDbContext, client, signer, avatarAddress, agentAddress);
+                return Mutation.Claim(contextService, client, signer, avatarAddress, agentAddress);
             });
     }
 }

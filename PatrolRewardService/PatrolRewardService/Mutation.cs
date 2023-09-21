@@ -9,76 +9,26 @@ namespace PatrolRewardService;
 
 public class Mutation
 {
-    public static async Task<AvatarModel> PutAvatar([Service] RewardDbContext rewardDbContext,
+    public static async Task<AvatarModel> PutAvatar(
+        ContextService contextService,
         [Service] NineChroniclesClient client,
-        string avatarAddress, string agentAddress, bool save = true)
+        string avatarAddress,
+        string agentAddress,
+        bool save = true
+    )
     {
-        var avatarExist = true;
-        var avatar = Query.GetAvatar(rewardDbContext, avatarAddress, agentAddress, true);
-        if (avatar is null)
-        {
-            avatarExist = false;
-            avatar = new AvatarModel
-            {
-                AvatarAddress = new Address(avatarAddress),
-                AgentAddress = new Address(agentAddress),
-                CreatedAt = DateTime.UtcNow
-            };
-        }
-
         var avatarState = await client.GetAvatar(avatarAddress);
-        avatar.Level = avatarState.Level;
-        if (save)
-        {
-            if (avatarExist)
-                rewardDbContext.Avatars.Update(avatar);
-            else
-                rewardDbContext.Avatars.Add(avatar);
-            await rewardDbContext.SaveChangesAsync();
-        }
-
-        return avatar;
+        return await contextService.PutAvatar(avatarState, avatarAddress, agentAddress, save);
     }
 
-    public static async Task<int> PutClaimPolicy([Service] RewardDbContext rewardDbContext,
+    public static async Task<int> PutClaimPolicy(ContextService contextService,
         List<RewardBaseModel> rewards, bool free, TimeSpan interval, bool activate, int minimumLevel, int? maxLevel = null)
     {
-        if (rewards.Any(r => r.RewardInterval != interval))
-        {
-            throw new ArgumentException("reward interval must be equal to policy interval.");
-        }
-        var policy = await rewardDbContext
-            .RewardPolicies
-            .Include(r => r.Rewards)
-            .FirstOrDefaultAsync(r => r.Free == free && r.Activate == activate && r.MinimumLevel == minimumLevel);
-        if (policy is null)
-        {
-            policy = new RewardPolicyModel
-            {
-                Rewards = rewards,
-                Free = free,
-                MinimumRequiredInterval = interval,
-                Activate = activate,
-                MinimumLevel = minimumLevel,
-                MaxLevel = maxLevel,
-            };
-            await rewardDbContext.RewardPolicies.AddAsync(policy);
-        }
-        else
-        {
-            policy.Rewards.Clear();
-            policy.Rewards = rewards;
-            policy.MaxLevel = maxLevel;
-            policy.MinimumRequiredInterval = interval;
-            rewardDbContext.RewardPolicies.Update(policy);
-        }
-
-        await rewardDbContext.SaveChangesAsync();
-        return policy.Id;
+        return await contextService.PutClaimPolicy(rewards, free, interval, activate, minimumLevel, maxLevel);
     }
 
     public static async Task<string> Claim(
-        [Service] RewardDbContext rewardDbContext,
+        ContextService contextService,
         [Service] NineChroniclesClient client,
         [Service] Signer signer,
         string avatarAddress,
@@ -87,13 +37,11 @@ public class Mutation
     )
     {
         // Check registered player.
-        var avatar = Query.GetAvatar(rewardDbContext, avatarAddress, agentAddress, true);
+        var avatar = contextService.GetAvatar(avatarAddress, agentAddress, true);
         if (avatar is null) throw new GraphQLException("Avatar not found. register avatar first.");
 
         // Check duplicate claim.
-        var transaction = await rewardDbContext
-            .Transactions
-            .FirstOrDefaultAsync(t => t.AvatarAddress == avatar.AvatarAddress && t.ClaimCount == avatar.ClaimCount);
+        var transaction = await contextService.GetTransaction(avatar);
         if (transaction is not null) throw new GraphQLException("pending request exist.");
 
         // Check player level
@@ -101,7 +49,7 @@ public class Mutation
         avatar.Level = avatarState.Level;
 
         // Check claim policy
-        var policy = Query.GetPolicy(rewardDbContext, free, avatarState.Level);
+        var policy = contextService.GetPolicy(free, avatarState.Level);
 
         // check claim interval 
         var lastClaimedAt = avatar.LastClaimedAt ?? avatar.CreatedAt;
@@ -140,15 +88,7 @@ public class Mutation
         // prepare action plain value.
         var memo = $"patrol reward {avatarAddress} / {avatar.ClaimCount}";
         var action = claim.ToAction(avatarState.Address, avatarState.AgentAddress, memo);
-        long nonce = 0L;
-        try
-        {
-            nonce = await rewardDbContext.Transactions.Select(p => p.Nonce).MaxAsync() + 1;
-        }
-        catch (InvalidOperationException)
-        {
-            //pass
-        }
+        long nonce = await contextService.GetNonce();
         var tx = signer.Sign(nonce, new[] {action}, 1 * Currencies.Mead, 4L, now);
         transaction.TxId = tx.Id;
         transaction.Payload = Convert.ToBase64String(tx.Serialize());
@@ -159,8 +99,7 @@ public class Mutation
         transaction.Gas = 1;
         await client.StageTx(tx);
         transaction.Result = TransactionStatus.STAGING;
-        await rewardDbContext.Transactions.AddAsync(transaction);
-        await rewardDbContext.SaveChangesAsync();
+        await contextService.InsertTransaction(transaction);
         return claim.TxId.ToHex();
     }
 }

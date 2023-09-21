@@ -1,5 +1,13 @@
+using System.Security.Cryptography;
+using Bencodex;
+using Lib9c;
+using Libplanet.Common;
 using Libplanet.Crypto;
+using Libplanet.Types.Assets;
+using Libplanet.Types.Tx;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
+using Nekoyume.Action.Garages;
 using PatrolRewardService.Models;
 using Xunit;
 
@@ -7,7 +15,7 @@ namespace PatrolRewardService.Tests;
 
 public class QueryTest
 {
-    private readonly RewardDbContext _context;
+    private readonly string _conn;
 
     public QueryTest()
     {
@@ -20,10 +28,7 @@ public class QueryTest
             connectionString += $"Password={pw};";
         }
 
-        _context = new RewardDbContext(new DbContextOptionsBuilder<RewardDbContext>()
-            .UseNpgsql(connectionString)
-            .EnableSensitiveDataLogging()
-            .Options);
+        _conn = connectionString;
     }
 
     [Theory]
@@ -40,17 +45,20 @@ public class QueryTest
             CreatedAt = DateTime.UtcNow
         };
 
-        await _context.Database.EnsureDeletedAsync();
-        await _context.Database.EnsureCreatedAsync();
-        _context.Avatars.Add(player);
-        await _context.SaveChangesAsync();
-        Assert.Single(_context.Avatars);
+        var contextService = Fixtures.GetContextService(_conn);
+        var context = contextService.DbContext;
+        await context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureCreatedAsync();
+        context.Avatars.Add(player);
+        await context.SaveChangesAsync();
+        Assert.Single(context.Avatars);
         var serializedAvatarAddress = hex ? avatarAddress.ToHex() : avatarAddress.ToString();
         var serializedAgentAddress = hex ? agentAddress.ToHex() : agentAddress.ToString();
-        var result = Query.GetAvatar(_context, serializedAvatarAddress, serializedAgentAddress);
+        var query = new Query();
+        var result = query.GetAvatar(contextService, serializedAvatarAddress, serializedAgentAddress);
         Assert.NotNull(result);
         Assert.Equal(avatarAddress, result.AvatarAddress);
-        await _context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureDeletedAsync();
     }
 
     [Theory]
@@ -62,8 +70,10 @@ public class QueryTest
     [InlineData(350, 250)]
     public async Task GetPolicy(int level, int expectedLevel)
     {
-        await _context.Database.EnsureDeletedAsync();
-        await _context.Database.EnsureCreatedAsync();
+        var contextService = Fixtures.GetContextService(_conn);
+        var context = contextService.DbContext;
+        await context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureCreatedAsync();
         foreach (var (minimumLevel, maxLevel) in new (int, int?)[]
                  {
                      (50, 149),
@@ -79,12 +89,12 @@ public class QueryTest
                 MinimumLevel = minimumLevel,
                 MaxLevel = maxLevel,
             };
-            await _context.RewardPolicies.AddAsync(policy);
+            await context.RewardPolicies.AddAsync(policy);
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
-        var result = Query.GetPolicy(_context, true, level);
+        var result = Query.GetPolicy(contextService, true, level);
         Assert.Equal(expectedLevel, result.MinimumLevel);
     }
 }

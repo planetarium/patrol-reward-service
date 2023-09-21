@@ -12,7 +12,8 @@ internal static class Program
         var host = CreateHostBuilder(args).Build();
         using (var scope = host.Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<RewardDbContext>();
+            var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<RewardDbContext>>();
+            var db = contextFactory.CreateDbContext();
             Console.WriteLine("Migrate db.");
             db.Database.Migrate();
         }
@@ -56,13 +57,15 @@ public class StartUp
         services.AddSwaggerGen();
 
         // Database
-        services.AddDbContextFactory<RewardDbContext>(options =>
-        {
-            options
-                .UseNpgsql(Configuration.GetConnectionString("PatrolReward"))
-                .UseSnakeCaseNamingConvention()
-                .ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
-        });
+        services
+            .AddPooledDbContextFactory<RewardDbContext>(options =>
+            {
+                options
+                    .UseNpgsql(Configuration.GetConnectionString("PatrolReward"))
+                    .UseSnakeCaseNamingConvention()
+                    .ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
+            })
+            .AddTransient<ContextService>();
 
         // GraphqlClient
         services
@@ -82,7 +85,8 @@ public class StartUp
             .AddGraphQLServer()
             .RegisterService<NineChroniclesClient>()
             .RegisterService<Signer>()
-            .RegisterDbContext<RewardDbContext>(DbContextKind.Pooled)
+            // .RegisterDbContext<RewardDbContext>(DbContextKind.Pooled)
+            .RegisterService<ContextService>()
             .AddQueryType<QueryType>()
             .AddMutationType<MutationType>()
             .AddErrorFilter<GraphqlErrorFilter>();

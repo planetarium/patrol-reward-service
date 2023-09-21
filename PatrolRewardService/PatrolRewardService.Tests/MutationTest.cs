@@ -11,7 +11,6 @@ namespace PatrolRewardService.Tests;
 
 public class MutationTest
 {
-    private readonly RewardDbContext _context;
     private readonly string _conn;
 
     public MutationTest()
@@ -26,8 +25,6 @@ public class MutationTest
         }
 
         _conn = connectionString;
-        _context = new RewardDbContext(new DbContextOptionsBuilder<RewardDbContext>()
-            .UseNpgsql(connectionString).Options);
     }
 
     [Fact]
@@ -35,15 +32,17 @@ public class MutationTest
     {
         var avatarAddress = new PrivateKey().ToAddress();
         var agentAddress = new PrivateKey().ToAddress();
-        await _context.Database.EnsureDeletedAsync();
-        await _context.Database.EnsureCreatedAsync();
+        var contextService = Fixtures.GetContextService(_conn);
+        var context = contextService.DbContext;
+        await context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureCreatedAsync();
         var serializedAvatarAddress = avatarAddress.ToString();
         var serializedAgentAddress = agentAddress.ToString();
         var configOptions = new GraphqlClientOptions {Host = "http://9c-internal-validator-5.nine-chronicles.com", Port = 80};
         var client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(configOptions), new LoggerFactory());
-        await Assert.ThrowsAsync<GraphQLException>(() => Mutation.PutAvatar(_context, client, serializedAvatarAddress, serializedAgentAddress));
-        Assert.Empty(_context.Avatars);
-        await _context.Database.EnsureDeletedAsync();
+        await Assert.ThrowsAsync<GraphQLException>(() => Mutation.PutAvatar(contextService, client, serializedAvatarAddress, serializedAgentAddress));
+        Assert.Empty(context.Avatars);
+        await context.Database.EnsureDeletedAsync();
     }
 
     [Theory]
@@ -61,27 +60,29 @@ public class MutationTest
             Level = 1
         };
 
-        await _context.Database.EnsureDeletedAsync();
-        await _context.Database.EnsureCreatedAsync();
+        var contextService = Fixtures.GetContextService(_conn);
+        var context = contextService.DbContext;
+        await context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureCreatedAsync();
         if (exist)
         {
-            _context.Avatars.Add(player);
-            await _context.SaveChangesAsync();
-            Assert.Single(_context.Avatars);
+            context.Avatars.Add(player);
+            await context.SaveChangesAsync();
+            Assert.Single(context.Avatars);
         }
         else
         {
-            Assert.Empty(_context.Avatars);
+            Assert.Empty(context.Avatars);
         }
         var serializedAvatarAddress = avatarAddress.ToString();
         var serializedAgentAddress = agentAddress.ToString();
         var configOptions = new GraphqlClientOptions {Host = "http://9c-internal-validator-5.nine-chronicles.com", Port = 80};
         var client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(configOptions), new LoggerFactory());
-        var result = await Mutation.PutAvatar(_context, client, serializedAvatarAddress, serializedAgentAddress);
+        var result = await Mutation.PutAvatar(contextService, client, serializedAvatarAddress, serializedAgentAddress);
         Assert.NotNull(result);
         Assert.Equal(avatarAddress, result.AvatarAddress);
         Assert.True(result.Level > 0);
-        await _context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureDeletedAsync();
     }
 
     [Theory]
@@ -89,8 +90,10 @@ public class MutationTest
     [InlineData(false)]
     public async Task PutClaimPolicy(bool exist)
     {
-        await _context.Database.EnsureDeletedAsync();
-        await _context.Database.EnsureCreatedAsync();
+        var contextService = Fixtures.GetContextService(_conn);
+        var context = contextService.DbContext;
+        await context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureCreatedAsync();
         var interval = TimeSpan.FromHours(4);
         var apPotion = new FungibleItemRewardModel
         {
@@ -129,11 +132,10 @@ public class MutationTest
                 Activate = true,
                 MinimumLevel = minimumLevel,
             };
-            await _context.RewardPolicies.AddAsync(policy);
-            await _context.SaveChangesAsync();
+            await context.RewardPolicies.AddAsync(policy);
+            await context.SaveChangesAsync();
         }
 
-        var context = Fixtures.GetDbContext(_conn);
         var rewards = exist
             ? context.Rewards.ToList()
             : new List<RewardBaseModel>
@@ -142,10 +144,10 @@ public class MutationTest
                 hourGlass,
                 crystal,
             };
-        await Mutation.PutClaimPolicy(context, rewards, true, interval, true, minimumLevel);
+        await Mutation.PutClaimPolicy(contextService, rewards, true, interval, true, minimumLevel);
         var updatedPolicy = await context.RewardPolicies.Include(r => r.Rewards).SingleAsync();
         Assert.Equal(3, updatedPolicy.Rewards.Count);
         Assert.Equal(3, context.Rewards.Count());
-        await _context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureDeletedAsync();
     }
 }
