@@ -184,7 +184,6 @@ public class ContextService : IAsyncDisposable, IDisposable
                 _dbContext.Avatars.Add(avatar);
             await _dbContext.SaveChangesAsync();
         }
-    
         return avatar;
     }
 
@@ -205,7 +204,8 @@ public class ContextService : IAsyncDisposable, IDisposable
             .Include(t => t.Avatar)
             .Include(t => t.Claim)
             .ThenInclude(c => c.Garages)
-            .FirstOrDefaultAsync(t => t.TxId == txId && t.Result == TransactionStatus.FAILURE || t.Result == TransactionStatus.INVALID);
+            .FirstOrDefaultAsync(t =>
+                t.TxId == txId && t.Result == TransactionStatus.FAILURE || t.Result == TransactionStatus.INVALID);
         if (transaction is null)
         {
             return null;
@@ -234,6 +234,21 @@ public class ContextService : IAsyncDisposable, IDisposable
         await InsertTransaction(newTransaction);
         return txId;
     }
+
+    public async Task<DateTime?> SetAvatarTimestmap(string avatarAddress, DateTime? timeStamp = null)
+    {
+        // Check registered player.
+        var avatar = await _dbContext.Avatars.FirstOrDefaultAsync(a => a.AvatarAddress == new Address(avatarAddress));
+        if (avatar is null)
+        {
+            throw new GraphQLException("Avatar not found. register avatar first.");
+        }
+        avatar.LastClaimedAt = timeStamp;
+        _dbContext.Avatars.Update(avatar);
+        await _dbContext.SaveChangesAsync();
+        return avatar.LastClaimedAt;
+    }
+
     public async ValueTask DisposeAsync()
     {
         await DisposeAsyncCore().ConfigureAwait(false);

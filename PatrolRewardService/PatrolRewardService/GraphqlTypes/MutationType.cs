@@ -86,8 +86,8 @@ public class MutationType : ObjectType<Mutation>
             {
                 var avatarAddress = context.ArgumentValue<string>("avatarAddress");
                 var timeStamp = context.ArgumentValue<DateTime?>("timeStamp");
-                var rewardDbContext = context.Service<RewardDbContext>();
-                return Mutation.SetAvatarTimestamp(rewardDbContext, avatarAddress, timeStamp);
+                var contextService = context.Service<ContextService>();
+                return Mutation.SetAvatarTimestamp(contextService, avatarAddress, timeStamp);
             })
             .Type<DateTimeType>();
     }

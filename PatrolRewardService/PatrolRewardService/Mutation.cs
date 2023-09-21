@@ -115,17 +115,8 @@ public class Mutation
         return await contextService.RetryTransaction(signer, client, txId, password);
     }
 
-    public static async Task<DateTime?> SetAvatarTimestamp([Service] RewardDbContext rewardDbContext, string avatarAddress, DateTime? timeStamp = null)
+    public static async Task<DateTime?> SetAvatarTimestamp(ContextService contextService, string avatarAddress, DateTime? timeStamp = null)
     {
-        // Check registered player.
-        var avatar = await rewardDbContext.Avatars.FirstOrDefaultAsync(a => a.AvatarAddress == new Address(avatarAddress));
-        if (avatar is null)
-        {
-            throw new GraphQLException("Avatar not found. register avatar first.");
-        }
-        avatar.LastClaimedAt = timeStamp;
-        rewardDbContext.Avatars.Update(avatar);
-        await rewardDbContext.SaveChangesAsync();
-        return avatar.LastClaimedAt;
+        return await contextService.SetAvatarTimestmap(avatarAddress, timeStamp);
     }
 }
