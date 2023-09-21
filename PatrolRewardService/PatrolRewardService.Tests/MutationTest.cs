@@ -91,27 +91,27 @@ public class MutationTest
     {
         await _context.Database.EnsureDeletedAsync();
         await _context.Database.EnsureCreatedAsync();
+        var interval = TimeSpan.FromHours(4);
         var apPotion = new FungibleItemRewardModel
         {
             ItemId = 500000,
             FungibleId = "1",
             PerInterval = 1,
-            RewardInterval = TimeSpan.FromDays(1)
+            RewardInterval = interval,
         };
         var hourGlass = new FungibleItemRewardModel
         {
             ItemId = 400000,
             FungibleId = "2",
             PerInterval = 1,
-            RewardInterval = TimeSpan.FromHours(6),
+            RewardInterval = interval,
         };
         var crystal = new FungibleAssetValueRewardModel
         {
             Currency = "CRYSTAL",
             PerInterval = 1,
-            RewardInterval = TimeSpan.FromMinutes(5),
+            RewardInterval = interval,
         };
-        var interval = TimeSpan.FromSeconds(5);
         int minimumLevel = 50;
         if (exist)
         {

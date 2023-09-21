@@ -43,6 +43,10 @@ public class Mutation
     public static async Task<int> PutClaimPolicy([Service] RewardDbContext rewardDbContext,
         List<RewardBaseModel> rewards, bool free, TimeSpan interval, bool activate, int minimumLevel, int? maxLevel = null)
     {
+        if (rewards.Any(r => r.RewardInterval != interval))
+        {
+            throw new ArgumentException("reward interval must be equal to policy interval.");
+        }
         var policy = await rewardDbContext
             .RewardPolicies
             .Include(r => r.Rewards)
