@@ -124,9 +124,10 @@ public class Mutation
             CreatedAt = now,
             Transaction = transaction
         };
+        var maxInterval = policy.MinimumRequiredInterval;
         foreach (var reward in policy.Rewards)
         {
-            var claimReward = reward.CalculateReward(claim, diff, now);
+            var claimReward = reward.CalculateReward(claim, diff, now, maxInterval);
             claim.Garages.Add(claimReward);
         }
 

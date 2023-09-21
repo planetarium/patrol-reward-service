@@ -16,28 +16,27 @@ public class RewardBaseModel
 
     public List<RewardPolicyModel> RewardPolicies { get; } = new();
 
-    public GarageModel CalculateReward(ClaimModel claim, TimeSpan diff, DateTime dateTime)
+    public GarageModel CalculateReward(ClaimModel claim, TimeSpan diff, DateTime dateTime, TimeSpan maxInterval)
     {
         return new GarageModel
         {
             Reward = this,
             Claim = claim,
-            Count = CalculateCount(diff),
+            Count = CalculateCount(diff, maxInterval),
             CreatedAt = dateTime
         };
     }
 
-    public int CalculateRate(TimeSpan diff)
+    public int CalculateRate(TimeSpan diff, TimeSpan maxInterval)
     {
-        var total = TimeSpan.FromDays(1);
-        if (diff >= total) diff = total;
+        if (diff >= maxInterval) diff = maxInterval;
         var rate = (int) (diff / RewardInterval);
         return rate;
     }
 
-    public int CalculateCount(TimeSpan diff)
+    public int CalculateCount(TimeSpan diff, TimeSpan maxInterval)
     {
-        var rate = CalculateRate(diff);
+        var rate = CalculateRate(diff, maxInterval);
         return PerInterval * rate;
     }
 }
