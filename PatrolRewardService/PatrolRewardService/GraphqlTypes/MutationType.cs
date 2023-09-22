@@ -90,5 +90,15 @@ public class MutationType : ObjectType<Mutation>
                 return Mutation.SetAvatarTimestamp(contextService, avatarAddress, timeStamp);
             })
             .Type<DateTimeType>();
+        descriptor
+            .Field("deleteAvatar")
+            .Argument("avatarAddress", a => a.Type<NonNullType<AddressType>>())
+            .Resolve(context =>
+            {
+                var avatarAddress = context.ArgumentValue<string>("avatarAddress");
+                var contextService = context.Service<ContextService>();
+                return Mutation.DeleteAvatar(contextService, avatarAddress);
+            })
+            .Type<DateTimeType>();
     }
 }

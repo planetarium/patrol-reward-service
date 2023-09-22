@@ -249,6 +249,19 @@ public class ContextService : IAsyncDisposable, IDisposable
         return avatar.LastClaimedAt;
     }
 
+    public async Task<bool> DeleteAvatar(string avatarAddress)
+    {
+        var avatar = await _dbContext.Avatars.FirstOrDefaultAsync(a => a.AvatarAddress == new Address(avatarAddress));
+        if (avatar is null)
+        {
+            throw new GraphQLException("Avatar not found. register avatar first.");
+        }
+
+        _dbContext.Avatars.Remove(avatar);
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
+
     public async ValueTask DisposeAsync()
     {
         await DisposeAsyncCore().ConfigureAwait(false);
@@ -273,7 +286,8 @@ public class ContextService : IAsyncDisposable, IDisposable
 
             _disposed = true;
         }
-    }    
+    }
+
     protected virtual async ValueTask DisposeAsyncCore()
     {
         await _dbContext.DisposeAsync();

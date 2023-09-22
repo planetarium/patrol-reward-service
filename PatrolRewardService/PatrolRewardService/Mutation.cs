@@ -119,4 +119,9 @@ public class Mutation
     {
         return await contextService.SetAvatarTimestmap(avatarAddress, timeStamp);
     }
+
+    public static async Task<bool> DeleteAvatar(ContextService contextService, string avatarAddress)
+    {
+        return await contextService.DeleteAvatar(avatarAddress);
+    }
 }
