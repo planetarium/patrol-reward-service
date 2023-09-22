@@ -27,8 +27,7 @@ public class ClaimModel
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public TxId TxId { get; set; }
-    public TransactionModel Transaction { get; set; }
+    public List<TransactionModel> Transactions { get; } = new();
 
     public UnloadFromMyGarages ToAction(Address avatarAddress, Address agentAddress, string? memo = null)
     {

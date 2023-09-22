@@ -74,8 +74,8 @@ public class Mutation
             Policy = policy,
             Avatar = avatar,
             CreatedAt = now,
-            Transaction = transaction
         };
+        claim.Transactions.Add(transaction);
         var maxInterval = policy.MinimumRequiredInterval;
         foreach (var reward in policy.Rewards)
         {
@@ -100,6 +100,6 @@ public class Mutation
         await client.StageTx(tx);
         transaction.Result = TransactionStatus.STAGING;
         await contextService.InsertTransaction(transaction);
-        return claim.TxId.ToHex();
+        return transaction.TxId.ToHex();
     }
 }

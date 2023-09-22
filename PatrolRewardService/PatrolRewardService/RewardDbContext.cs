@@ -67,13 +67,10 @@ public class RewardDbContext : DbContext
             .Entity<TransactionModel>()
             .HasAlternateKey(p => p.Nonce);
         modelBuilder
-            .Entity<TransactionModel>()
-            .HasAlternateKey(p => new {p.AvatarAddress, p.ClaimCount});
-        modelBuilder
             .Entity<ClaimModel>()
-            .HasOne(e => e.Transaction)
+            .HasMany(e => e.Transactions)
             .WithOne(e => e.Claim)
-            .HasForeignKey<ClaimModel>(e => e.TxId)
+            .HasForeignKey(e => e.ClaimId)
             .IsRequired();
     }
 }

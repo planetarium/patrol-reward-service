@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PatrolRewardService;
@@ -11,9 +12,11 @@ using PatrolRewardService;
 namespace PatrolRewardService.Migrations
 {
     [DbContext(typeof(RewardDbContext))]
-    partial class RewardDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230922113921_update_tx_claim_relationship")]
+    partial class update_tx_claim_relationship
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
