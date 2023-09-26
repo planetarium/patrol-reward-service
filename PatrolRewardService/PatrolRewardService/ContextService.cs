@@ -176,6 +176,10 @@ public class ContextService : IAsyncDisposable, IDisposable
         return avatar;
     }
 
+    public IQueryable<TransactionModel> Transactions()
+    {
+        return _dbContext.Transactions;
+    }
     public async ValueTask DisposeAsync()
     {
         await DisposeAsyncCore().ConfigureAwait(false);

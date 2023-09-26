@@ -26,5 +26,13 @@ public class QueryType : ObjectType<Query>
                 return Query.GetTransaction(contextService, txId);
             })
             .Type<TransactionType>();
+        descriptor.Field("transactions")
+            .Type<ListType<TransactionType>>()
+            .Resolve(context =>
+            {
+                var contextService = context.Service<ContextService>();
+                return Query.Transactions(contextService);
+            })
+            .UseFiltering();
     }
 }

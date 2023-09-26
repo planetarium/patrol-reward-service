@@ -28,4 +28,9 @@ public class Query
     {
         return await contextService.GetTransaction(txId);
     }
+
+    public static IQueryable<TransactionModel> Transactions(ContextService contextService)
+    {
+        return contextService.Transactions();
+    }
 }

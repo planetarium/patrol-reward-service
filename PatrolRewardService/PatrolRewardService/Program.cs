@@ -89,7 +89,8 @@ public class StartUp
             .RegisterService<ContextService>()
             .AddQueryType<QueryType>()
             .AddMutationType<MutationType>()
-            .AddErrorFilter<GraphqlErrorFilter>();
+            .AddErrorFilter<GraphqlErrorFilter>()
+            .AddFiltering();
 
         // Signer
         services.AddSingleton<Signer>(_ =>
