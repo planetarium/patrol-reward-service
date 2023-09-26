@@ -27,6 +27,7 @@ public class MutationType : ObjectType<Mutation>
             .Argument("interval", a => a.Type<NonNullType<TimeSpanType>>())
             .Argument("activate", a => a.Type<NonNullType<BooleanType>>())
             .Argument("minimumLevel", a => a.Type<NonNullType<IntType>>())
+            .Argument("password", a => a.Type<NonNullType<StringType>>())
             .Argument("maxLevel", a => a.Type<IntType>())
             .Resolve(context =>
             {
@@ -35,6 +36,7 @@ public class MutationType : ObjectType<Mutation>
                 var interval = context.ArgumentValue<TimeSpan>("interval");
                 var activate = context.ArgumentValue<bool>("activate");
                 var minimumLevel = context.ArgumentValue<int>("minimumLevel");
+                var password = context.ArgumentValue<string>("password");
                 var maxLevel = context.ArgumentValue<int?>("maxLevel");
                 var contextService = context.Service<ContextService>();
                 var rewards = new List<RewardBaseModel>();
@@ -43,7 +45,7 @@ public class MutationType : ObjectType<Mutation>
                     var reward = Query.GetReward(contextService, rewardInput) ?? rewardInput.ToReward();
                     rewards.Add(reward);
                 }
-                return Mutation.PutClaimPolicy(contextService, rewards, free, interval, activate, minimumLevel, maxLevel);
+                return Mutation.PutClaimPolicy(contextService, rewards, free, interval, activate, minimumLevel, password, maxLevel);
             });
         descriptor
             .Field("claim")

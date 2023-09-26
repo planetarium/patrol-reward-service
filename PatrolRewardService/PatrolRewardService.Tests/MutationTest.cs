@@ -32,7 +32,7 @@ public class MutationTest
     {
         var avatarAddress = new PrivateKey().ToAddress();
         var agentAddress = new PrivateKey().ToAddress();
-        var contextService = Fixtures.GetContextService(_conn);
+        var contextService = Fixtures.GetContextService(_conn, "password");
         var context = contextService.DbContext;
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
@@ -60,7 +60,7 @@ public class MutationTest
             Level = 1
         };
 
-        var contextService = Fixtures.GetContextService(_conn);
+        var contextService = Fixtures.GetContextService(_conn, "password");
         var context = contextService.DbContext;
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
@@ -90,7 +90,7 @@ public class MutationTest
     [InlineData(false)]
     public async Task PutClaimPolicy(bool exist)
     {
-        var contextService = Fixtures.GetContextService(_conn);
+        var contextService = Fixtures.GetContextService(_conn, "password");
         var context = contextService.DbContext;
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
@@ -144,10 +144,18 @@ public class MutationTest
                 hourGlass,
                 crystal,
             };
-        await Mutation.PutClaimPolicy(contextService, rewards, true, interval, true, minimumLevel);
+        await Mutation.PutClaimPolicy(contextService, rewards, true, interval, true, minimumLevel, "password");
         var updatedPolicy = await context.RewardPolicies.Include(r => r.Rewards).SingleAsync();
         Assert.Equal(3, updatedPolicy.Rewards.Count);
         Assert.Equal(3, context.Rewards.Count());
         await context.Database.EnsureDeletedAsync();
+    }
+
+    [Fact]
+    public void PutClaimPolicy_Throw_UnauthorizedAccessException()
+    {
+        var contextService = Fixtures.GetContextService(_conn, "password");
+        Assert.ThrowsAsync<UnauthorizedAccessException>(() => Mutation.PutClaimPolicy(contextService, new List<RewardBaseModel>(), true, TimeSpan.Zero, true, 0, "pw"));
+
     }
 }

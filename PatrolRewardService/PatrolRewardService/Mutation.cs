@@ -22,9 +22,9 @@ public class Mutation
     }
 
     public static async Task<int> PutClaimPolicy(ContextService contextService,
-        List<RewardBaseModel> rewards, bool free, TimeSpan interval, bool activate, int minimumLevel, int? maxLevel = null)
+        List<RewardBaseModel> rewards, bool free, TimeSpan interval, bool activate, int minimumLevel, string password, int? maxLevel = null)
     {
-        return await contextService.PutClaimPolicy(rewards, free, interval, activate, minimumLevel, maxLevel);
+        return await contextService.PutClaimPolicy(rewards, free, interval, activate, minimumLevel, password, maxLevel);
     }
 
     public static async Task<string> Claim(

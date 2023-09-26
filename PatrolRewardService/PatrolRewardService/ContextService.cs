@@ -9,11 +9,13 @@ public class ContextService : IAsyncDisposable, IDisposable
 {
     private bool _disposed;
     private readonly RewardDbContext _dbContext;
+    private readonly IConfiguration _configuration;
     public RewardDbContext DbContext => _dbContext;
 
-    public ContextService(IDbContextFactory<RewardDbContext> dbContextFactory)
+    public ContextService(IDbContextFactory<RewardDbContext> dbContextFactory, IConfiguration configuration)
     {
         _dbContext = dbContextFactory.CreateDbContext();
+        _configuration = configuration;
     }
 
     public AvatarModel? GetAvatar(string avatarAddress, string agentAddress, bool track = false)
@@ -69,8 +71,12 @@ public class ContextService : IAsyncDisposable, IDisposable
     }
 
     public async Task<int> PutClaimPolicy(List<RewardBaseModel> rewards, bool free, TimeSpan interval, bool activate,
-        int minimumLevel, int? maxLevel = null)
+        int minimumLevel, string password, int? maxLevel = null)
     {
+        if (password != _configuration["PatrolReward:ApiKey"])
+        {
+            throw new UnauthorizedAccessException();
+        }
         if (rewards.Any(r => r.RewardInterval != interval))
         {
             throw new ArgumentException("reward interval must be equal to policy interval.");
