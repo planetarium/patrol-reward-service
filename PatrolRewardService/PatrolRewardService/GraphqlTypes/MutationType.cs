@@ -1,3 +1,4 @@
+using Libplanet.Types.Tx;
 using PatrolRewardService.Models;
 
 namespace PatrolRewardService.GraphqlTypes;
@@ -61,5 +62,20 @@ public class MutationType : ObjectType<Mutation>
                 var signer = context.Service<Signer>();
                 return Mutation.Claim(contextService, client, signer, avatarAddress, agentAddress);
             });
+        descriptor
+            .Field("retryTransaction")
+            .UseServiceScope()
+            .Argument("txId", a => a.Type<NonNullType<TxIdType>>())
+            .Argument("password", a => a.Type<NonNullType<StringType>>())
+            .Resolve(context =>
+            {
+                var txId = context.ArgumentValue<TxId>("txId");
+                var password = context.ArgumentValue<string>("password");
+                var contextService = context.Service<ContextService>();
+                var client = context.Service<NineChroniclesClient>();
+                var signer = context.Service<Signer>();
+                return Mutation.RetryTransaction(contextService, signer, client, txId, password);
+            })
+            .Type<TxIdType>();
     }
 }
