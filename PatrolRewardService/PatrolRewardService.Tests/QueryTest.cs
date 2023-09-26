@@ -5,6 +5,8 @@ using Libplanet.Common;
 using Libplanet.Crypto;
 using Libplanet.Types.Assets;
 using Libplanet.Types.Tx;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Nekoyume.Action.Garages;
@@ -45,7 +47,7 @@ public class QueryTest
             CreatedAt = DateTime.UtcNow
         };
 
-        var contextService = Fixtures.GetContextService(_conn);
+        var contextService = Fixtures.GetContextService(_conn, "password");
         var context = contextService.DbContext;
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
@@ -70,7 +72,7 @@ public class QueryTest
     [InlineData(350, 250)]
     public async Task GetPolicy(int level, int expectedLevel)
     {
-        var contextService = Fixtures.GetContextService(_conn);
+        var contextService = Fixtures.GetContextService(_conn, "password");
         var context = contextService.DbContext;
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
