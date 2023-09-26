@@ -1,14 +1,19 @@
-using HotChocolate.Types;
-using Libplanet.Crypto;
-
-namespace PatrolRewardService;
+namespace PatrolRewardService.GraphqlTypes;
 
 public class QueryType : ObjectType<Query>
 {
     protected override void Configure(IObjectTypeDescriptor<Query> descriptor)
     {
-        descriptor.Field(f => f.GetPlayer(default!, default!))
+        descriptor.Field(f => f.GetAvatar(default!, default!, default!, default!))
             .Argument("avatarAddress", a => a.Type<NonNullType<AddressType>>())
-            .Type<PlayerModelType>();
+            .Argument("agentAddress", a => a.Type<NonNullType<AddressType>>())
+            .Type<AvatarModelType>();
+        descriptor.Field(f => Query.GetPolicy(default!, default!, default!))
+            .Argument("free", a => a.Type<NonNullType<BooleanType>>())
+            .Argument("level", a => a.Type<NonNullType<IntType>>())
+            .Type<RewardPolicyType>();
+        descriptor.Field(f => Query.GetReward(default!, default!))
+            .Argument("rewardInput", a => a.Type<RewardInputType>())
+            .Type<RewardType>();
     }
 }

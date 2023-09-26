@@ -1,12 +1,7 @@
-using System;
-using HotChocolate.Data;
-using Libplanet.Crypto;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Options;
+using PatrolRewardService.GraphqlTypes;
 
 namespace PatrolRewardService;
 
@@ -17,7 +12,8 @@ internal static class Program
         var host = CreateHostBuilder(args).Build();
         using (var scope = host.Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<ServiceContext>();
+            var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<RewardDbContext>>();
+            var db = contextFactory.CreateDbContext();
             Console.WriteLine("Migrate db.");
             db.Database.Migrate();
         }
@@ -29,18 +25,28 @@ internal static class Program
     public static IHostBuilder CreateHostBuilder(string[] args)
     {
         return Host.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration((_, config) =>
+            {
+                IConfiguration configRoot = config.Build();
+                GraphqlClientOptions graphqlClientOptions = new();
+                configRoot.GetSection(GraphqlClientOptions.GraphqlClientConfig)
+                    .Bind(graphqlClientOptions);
+                SignerOptions signerOptions = new();
+                configRoot.GetSection(SignerOptions.SignerConfig)
+                    .Bind(signerOptions);
+            })
             .ConfigureWebHostDefaults(webBuilder => webBuilder.UseStartup<StartUp>());
     }
 }
 
 public class StartUp
 {
-    public IConfiguration Configuration { get; }
-
     public StartUp(IConfiguration configuration)
     {
         Configuration = configuration;
     }
+
+    public IConfiguration Configuration { get; }
 
     public void ConfigureServices(IServiceCollection services)
     {
@@ -51,16 +57,51 @@ public class StartUp
         services.AddSwaggerGen();
 
         // Database
-        services.AddDbContextFactory<ServiceContext>(options =>
-        {
-            options.UseNpgsql(Configuration.GetConnectionString("PatrolReward"));
-        });
+        services
+            .AddPooledDbContextFactory<RewardDbContext>(options =>
+            {
+                options
+                    .UseNpgsql(Configuration.GetConnectionString("PatrolReward"))
+                    .UseSnakeCaseNamingConvention()
+                    .ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
+            })
+            .AddTransient<ContextService>();
+
+        // GraphqlClient
+        services
+            .AddSingleton<NineChroniclesClient>(sp =>
+            {
+                var configRoot = sp.GetRequiredService<IConfiguration>();
+                GraphqlClientOptions graphqlClientOptions = new();
+                configRoot.GetSection(GraphqlClientOptions.GraphqlClientConfig)
+                    .Bind(graphqlClientOptions);
+                var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+                return new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(graphqlClientOptions),
+                    loggerFactory);
+            });
 
         // Graphql
         services
             .AddGraphQLServer()
-            .RegisterDbContext<ServiceContext>(DbContextKind.Pooled)
-            .AddQueryType<QueryType>();
+            .RegisterService<NineChroniclesClient>()
+            .RegisterService<Signer>()
+            // .RegisterDbContext<RewardDbContext>(DbContextKind.Pooled)
+            .RegisterService<ContextService>()
+            .AddQueryType<QueryType>()
+            .AddMutationType<MutationType>()
+            .AddErrorFilter<GraphqlErrorFilter>();
+
+        // Signer
+        services.AddSingleton<Signer>(_ =>
+        {
+            SignerOptions signerOptions = new();
+            Configuration.GetSection(SignerOptions.SignerConfig)
+                .Bind(signerOptions);
+            return new Signer(new OptionsWrapper<SignerOptions>(signerOptions));
+        });
+
+        // Worker
+        services.AddHostedService<TransactionWorker>();
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -80,5 +121,14 @@ public class StartUp
             endpoints.MapGraphQL();
             endpoints.MapControllers();
         });
+    }
+
+    public class GraphqlErrorFilter : IErrorFilter
+    {
+        public IError OnError(IError error)
+        {
+            var msg = error.Exception?.Message ?? error.Message;
+            return error.WithMessage(msg);
+        }
     }
 }

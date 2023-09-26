@@ -1,16 +1,25 @@
-using System.Linq;
-using HotChocolate;
 using Libplanet.Crypto;
 using Microsoft.EntityFrameworkCore;
+using PatrolRewardService.GraphqlTypes;
 using PatrolRewardService.Models;
 
 namespace PatrolRewardService;
 
 public class Query
 {
-    public PlayerModel? GetPlayer([Service] ServiceContext serviceContext, string avatarAddress)
+    public AvatarModel? GetAvatar(ContextService contextService, string avatarAddress,
+        string agentAddress, bool track = false)
     {
-        var query = serviceContext.Players.AsNoTracking().FirstOrDefault(p => p.AvatarAddress == new Address(avatarAddress));
-        return query;
+        return contextService.GetAvatar(avatarAddress, agentAddress, track);
+    }
+
+    public static RewardPolicyModel GetPolicy(ContextService contextService, bool free, int level)
+    {
+        return contextService.GetPolicy(free, level);
+    }
+
+    public static RewardBaseModel? GetReward(ContextService contextService, RewardInput rewardInput)
+    {
+        return contextService.GetReward(rewardInput);
     }
 }

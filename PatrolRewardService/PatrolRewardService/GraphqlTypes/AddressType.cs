@@ -1,24 +1,32 @@
 using HotChocolate.Language;
-using HotChocolate.Types;
 using Libplanet.Crypto;
 
-namespace PatrolRewardService;
+namespace PatrolRewardService.GraphqlTypes;
 
 public class AddressType : ScalarType<string, StringValueNode>
 {
-    public AddressType() : base("Address")
+    public AddressType() : base("address")
     {
     }
 
-    public override IValueNode ParseResult(object? resultValue) => ParseValue(resultValue);
-    protected override string ParseLiteral(StringValueNode valueSyntax) => valueSyntax.Value;
-    protected override StringValueNode ParseValue(string runtimeValue) => new(runtimeValue);
+    public override IValueNode ParseResult(object? resultValue)
+    {
+        return ParseValue(resultValue);
+    }
+
+    protected override string ParseLiteral(StringValueNode valueSyntax)
+    {
+        return valueSyntax.Value;
+    }
+
+    protected override StringValueNode ParseValue(string runtimeValue)
+    {
+        return new StringValueNode(runtimeValue);
+    }
+
     public override object? Serialize(object? runtimeValue)
     {
-        if (runtimeValue is Address a)
-        {
-            return a;
-        }
+        if (runtimeValue is Address a) return a;
 
         return null;
     }

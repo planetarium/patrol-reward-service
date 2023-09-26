@@ -1,5 +1,13 @@
+using System.Security.Cryptography;
+using Bencodex;
+using Lib9c;
+using Libplanet.Common;
 using Libplanet.Crypto;
+using Libplanet.Types.Assets;
+using Libplanet.Types.Tx;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
+using Nekoyume.Action.Garages;
 using PatrolRewardService.Models;
 using Xunit;
 
@@ -7,7 +15,7 @@ namespace PatrolRewardService.Tests;
 
 public class QueryTest
 {
-    private readonly ServiceContext _context;
+    private readonly string _conn;
 
     public QueryTest()
     {
@@ -20,8 +28,7 @@ public class QueryTest
             connectionString += $"Password={pw};";
         }
 
-        _context = new ServiceContext(new DbContextOptionsBuilder<ServiceContext>()
-            .UseNpgsql(connectionString).Options);
+        _conn = connectionString;
     }
 
     [Theory]
@@ -31,24 +38,63 @@ public class QueryTest
     {
         var avatarAddress = new PrivateKey().ToAddress();
         var agentAddress = new PrivateKey().ToAddress();
-        var player = new PlayerModel
+        var player = new AvatarModel
         {
             AvatarAddress = avatarAddress,
             AgentAddress = agentAddress,
             CreatedAt = DateTime.UtcNow
         };
 
-        await _context.Database.EnsureDeletedAsync();
-        await _context.Database.EnsureCreatedAsync();
-        _context.Players.Add(player);
-        await _context.SaveChangesAsync();
-        Assert.Single(_context.Players);
-
+        var contextService = Fixtures.GetContextService(_conn);
+        var context = contextService.DbContext;
+        await context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureCreatedAsync();
+        context.Avatars.Add(player);
+        await context.SaveChangesAsync();
+        Assert.Single(context.Avatars);
+        var serializedAvatarAddress = hex ? avatarAddress.ToHex() : avatarAddress.ToString();
+        var serializedAgentAddress = hex ? agentAddress.ToHex() : agentAddress.ToString();
         var query = new Query();
-        var address = hex ? avatarAddress.ToHex() : avatarAddress.ToString();
-        var result = query.GetPlayer(_context, address);
+        var result = query.GetAvatar(contextService, serializedAvatarAddress, serializedAgentAddress);
         Assert.NotNull(result);
         Assert.Equal(avatarAddress, result.AvatarAddress);
-        await _context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureDeletedAsync();
+    }
+
+    [Theory]
+    [InlineData(0, 50)]
+    [InlineData(50, 50)]
+    [InlineData(149, 50)]
+    [InlineData(150, 150)]
+    [InlineData(250, 250)]
+    [InlineData(350, 250)]
+    public async Task GetPolicy(int level, int expectedLevel)
+    {
+        var contextService = Fixtures.GetContextService(_conn);
+        var context = contextService.DbContext;
+        await context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureCreatedAsync();
+        foreach (var (minimumLevel, maxLevel) in new (int, int?)[]
+                 {
+                     (50, 149),
+                     (150, 249),
+                     (250, null)
+                 })
+        {
+            var policy = new RewardPolicyModel
+            {
+                Free = true,
+                MinimumRequiredInterval = TimeSpan.FromSeconds(0),
+                Activate = true,
+                MinimumLevel = minimumLevel,
+                MaxLevel = maxLevel,
+            };
+            await context.RewardPolicies.AddAsync(policy);
+        }
+
+        await context.SaveChangesAsync();
+
+        var result = Query.GetPolicy(contextService, true, level);
+        Assert.Equal(expectedLevel, result.MinimumLevel);
     }
 }
