@@ -22,11 +22,19 @@ public class QueryTypeTest
 
     public QueryTypeTest()
     {
+        var host = Environment.GetEnvironmentVariable("TEST_DB_HOST") ?? "localhost";
+        var userName = Environment.GetEnvironmentVariable("TEST_DB_USER") ?? "postgres";
+        var pw = Environment.GetEnvironmentVariable("TEST_DB_PW");
+        var connectionString = $"Host={host};Username={userName};Database={GetType().Name};";
+        if (!string.IsNullOrEmpty(pw))
+        {
+            connectionString += $"Password={pw};";
+        }
         var privateKey = new PrivateKey();
         var blockHash = new BlockHash();
         var myConfiguration = new Dictionary<string, string>
         {
-            {"ConnectionStrings:PatrolReward", "Host=localhost;Username=postgres;Database=QueryTypeTest"},
+            {"ConnectionStrings:PatrolReward", connectionString},
             {"GraphqlClientConfig:Host", "http://9c-internal-validator-5.nine-chronicles.com"},
             {"GraphqlClientConfig:Port", "80"},
             {"SignerConfig:PrivateKey", ByteUtil.Hex(privateKey.ByteArray)},
