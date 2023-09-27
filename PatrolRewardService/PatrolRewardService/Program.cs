@@ -65,7 +65,11 @@ public class StartUp
                     .UseSnakeCaseNamingConvention()
                     .ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
             })
-            .AddTransient<ContextService>();
+            .AddTransient<ContextService>(sp =>
+            {
+                var contextFactory = sp.GetRequiredService<IDbContextFactory<RewardDbContext>>();
+                return new ContextService(contextFactory, Configuration);
+            });
 
         // GraphqlClient
         services
