@@ -1,4 +1,6 @@
+using Lib9c;
 using Libplanet.Crypto;
+using Libplanet.Types.Tx;
 using Microsoft.EntityFrameworkCore;
 using PatrolRewardService.GraphqlTypes;
 using PatrolRewardService.Models;
@@ -118,6 +120,14 @@ public class ContextService : IAsyncDisposable, IDisposable
             .FirstOrDefaultAsync(t => t.AvatarAddress == avatar.AvatarAddress && t.ClaimCount == avatar.ClaimCount);
     }
 
+    public async Task<TransactionModel?> GetTransaction(TxId txId)
+    {
+        return await _dbContext
+            .Transactions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.TxId == txId);
+    }
+
     public async Task<long> GetNonce()
     {
         long nonce = 0L;
@@ -167,6 +177,52 @@ public class ContextService : IAsyncDisposable, IDisposable
         return avatar;
     }
 
+    public IQueryable<TransactionModel> Transactions()
+    {
+        return _dbContext.Transactions;
+    }
+
+    public async Task<TxId?> RetryTransaction(Signer signer, NineChroniclesClient client, TxId txId, string password)
+    {
+        if (password != _configuration["PatrolReward:ApiKey"])
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        var transaction = await _dbContext
+            .Transactions
+            .Include(t => t.Avatar)
+            .Include(t => t.Claim)
+            .ThenInclude(c => c.Garages)
+            .FirstOrDefaultAsync(t => t.TxId == txId && t.Result == TransactionStatus.FAILURE || t.Result == TransactionStatus.INVALID);
+        if (transaction is null)
+        {
+            return null;
+        }
+
+        var newNonce = await GetNonce();
+        var avatar = transaction.Avatar;
+        var memo = $"retry patrol reward {avatar.AvatarAddress} / {avatar.ClaimCount}";
+        var action = transaction.Claim.ToAction(avatar.AvatarAddress, avatar.AgentAddress, memo);
+        var now = DateTime.UtcNow;
+        var tx = signer.Sign(newNonce, new[] {action}, 1 * Currencies.Mead, 4L, now);
+        var newTransaction = new TransactionModel
+        {
+            Avatar = avatar,
+            CreatedAt = now,
+            ClaimCount = avatar.ClaimCount,
+            Nonce = newNonce,
+            TxId = tx.Id,
+            Payload = Convert.ToBase64String(tx.Serialize()),
+            Claim = transaction.Claim,
+            GasLimit = tx.GasLimit,
+            Gas = 1
+        };
+        await client.StageTx(tx);
+        newTransaction.Result = TransactionStatus.STAGING;
+        await InsertTransaction(newTransaction);
+        return txId;
+    }
     public async ValueTask DisposeAsync()
     {
         await DisposeAsyncCore().ConfigureAwait(false);

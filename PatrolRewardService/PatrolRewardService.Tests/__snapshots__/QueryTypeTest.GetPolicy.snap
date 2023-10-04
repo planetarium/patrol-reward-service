@@ -1,0 +1,22 @@
+{
+  "data": {
+    "policy": {
+      "activate": true,
+      "minimumLevel": 250,
+      "maxLevel": null,
+      "minimumRequiredInterval": "PT4H",
+      "rewards": [
+        {
+          "currency": "CRYSTAL",
+          "perInterval": 400,
+          "rewardInterval": "PT4H"
+        },
+        {
+          "itemId": 800201,
+          "perInterval": 20,
+          "rewardInterval": "PT4H"
+        }
+      ]
+    }
+  }
+}

@@ -1,3 +1,5 @@
+using Libplanet.Types.Tx;
+
 namespace PatrolRewardService.GraphqlTypes;
 
 public class QueryType : ObjectType<Query>
@@ -15,5 +17,22 @@ public class QueryType : ObjectType<Query>
         descriptor.Field(f => Query.GetReward(default!, default!))
             .Argument("rewardInput", a => a.Type<RewardInputType>())
             .Type<RewardType>();
+        descriptor.Field("transaction")
+            .Argument("txId", a => a.Type<NonNullType<TxIdType>>())
+            .Resolve(context =>
+            {
+                var txId = context.ArgumentValue<TxId>("txId");
+                var contextService = context.Service<ContextService>();
+                return Query.GetTransaction(contextService, txId);
+            })
+            .Type<TransactionType>();
+        descriptor.Field("transactions")
+            .Type<ListType<TransactionType>>()
+            .Resolve(context =>
+            {
+                var contextService = context.Service<ContextService>();
+                return Query.Transactions(contextService);
+            })
+            .UseFiltering();
     }
 }

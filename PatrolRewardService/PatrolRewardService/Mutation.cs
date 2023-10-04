@@ -1,6 +1,5 @@
 using Lib9c;
-using Libplanet.Crypto;
-using Microsoft.EntityFrameworkCore;
+using Libplanet.Types.Tx;
 using PatrolRewardService.Exceptions;
 using PatrolRewardService.GraphqlTypes;
 using PatrolRewardService.Models;
@@ -101,5 +100,16 @@ public class Mutation
         transaction.Result = TransactionStatus.STAGING;
         await contextService.InsertTransaction(transaction);
         return transaction.TxId.ToHex();
+    }
+
+    public static async Task<TxId?> RetryTransaction(
+        ContextService contextService,
+        [Service] Signer signer,
+        [Service] NineChroniclesClient client,
+        TxId txId,
+        string password
+    )
+    {
+        return await contextService.RetryTransaction(signer, client, txId, password);
     }
 }
