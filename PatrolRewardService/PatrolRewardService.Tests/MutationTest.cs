@@ -33,7 +33,7 @@ public class MutationTest
         var avatarAddress = new PrivateKey().ToAddress();
         var agentAddress = new PrivateKey().ToAddress();
         var contextService = Fixtures.GetContextService(_conn, "password");
-        var context = contextService.DbContext;
+        var context = await contextService.CreateDbContextAsync();
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
         var serializedAvatarAddress = avatarAddress.ToString();
@@ -61,7 +61,7 @@ public class MutationTest
         };
 
         var contextService = Fixtures.GetContextService(_conn, "password");
-        var context = contextService.DbContext;
+        var context = await contextService.CreateDbContextAsync();
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
         if (exist)
@@ -91,7 +91,7 @@ public class MutationTest
     public async Task PutClaimPolicy(bool exist)
     {
         var contextService = Fixtures.GetContextService(_conn, "password");
-        var context = contextService.DbContext;
+        var context = await contextService.CreateDbContextAsync();
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
         var interval = TimeSpan.FromHours(4);
