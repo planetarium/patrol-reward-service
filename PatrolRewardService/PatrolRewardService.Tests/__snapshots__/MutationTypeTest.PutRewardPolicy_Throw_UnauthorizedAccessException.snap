@@ -1,0 +1,16 @@
+{
+  "errors": [
+    {
+      "message": "Attempted to perform an unauthorized operation.",
+      "locations": [
+        {
+          "line": 2,
+          "column": 3
+        }
+      ],
+      "path": [
+        "putRewardPolicy"
+      ]
+    }
+  ]
+}

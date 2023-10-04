@@ -11,13 +11,24 @@ public class ContextService : IAsyncDisposable, IDisposable
 {
     private bool _disposed;
     private readonly RewardDbContext _dbContext;
+    private readonly IDbContextFactory<RewardDbContext> _dbContextFactory;
     private readonly IConfiguration _configuration;
-    public RewardDbContext DbContext => _dbContext;
 
     public ContextService(IDbContextFactory<RewardDbContext> dbContextFactory, IConfiguration configuration)
     {
         _dbContext = dbContextFactory.CreateDbContext();
+        _dbContextFactory = dbContextFactory;
         _configuration = configuration;
+    }
+
+    public RewardDbContext CreateDbContext()
+    {
+        return _dbContextFactory.CreateDbContext();
+    }
+
+    public async Task<RewardDbContext> CreateDbContextAsync()
+    {
+        return await _dbContextFactory.CreateDbContextAsync();
     }
 
     public AvatarModel? GetAvatar(string avatarAddress, string agentAddress, bool track = false)

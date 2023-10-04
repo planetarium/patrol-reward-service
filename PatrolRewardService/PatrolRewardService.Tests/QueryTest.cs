@@ -37,7 +37,7 @@ public class QueryTest
         };
 
         var contextService = Fixtures.GetContextService(_conn, "password");
-        var context = contextService.DbContext;
+        var context = await contextService.CreateDbContextAsync();
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
         context.Avatars.Add(player);
@@ -62,7 +62,7 @@ public class QueryTest
     public async Task GetPolicy(int level, int expectedLevel)
     {
         var contextService = Fixtures.GetContextService(_conn, "password");
-        var context = contextService.DbContext;
+        var context = await contextService.CreateDbContextAsync();
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
         foreach (var (minimumLevel, maxLevel) in new (int, int?)[]

@@ -33,7 +33,7 @@ public class MutationTest
         var avatarAddress = new PrivateKey().ToAddress();
         var agentAddress = new PrivateKey().ToAddress();
         var contextService = Fixtures.GetContextService(_conn, "password");
-        var context = contextService.DbContext;
+        var context = await contextService.CreateDbContextAsync();
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
         var serializedAvatarAddress = avatarAddress.ToString();
@@ -61,7 +61,7 @@ public class MutationTest
         };
 
         var contextService = Fixtures.GetContextService(_conn, "password");
-        var context = contextService.DbContext;
+        var context = await contextService.CreateDbContextAsync();
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
         if (exist)
@@ -83,79 +83,5 @@ public class MutationTest
         Assert.Equal(avatarAddress, result.AvatarAddress);
         Assert.True(result.Level > 0);
         await context.Database.EnsureDeletedAsync();
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task PutClaimPolicy(bool exist)
-    {
-        var contextService = Fixtures.GetContextService(_conn, "password");
-        var context = contextService.DbContext;
-        await context.Database.EnsureDeletedAsync();
-        await context.Database.EnsureCreatedAsync();
-        var interval = TimeSpan.FromHours(4);
-        var apPotion = new FungibleItemRewardModel
-        {
-            ItemId = 500000,
-            FungibleId = "1",
-            PerInterval = 1,
-            RewardInterval = interval,
-        };
-        var hourGlass = new FungibleItemRewardModel
-        {
-            ItemId = 400000,
-            FungibleId = "2",
-            PerInterval = 1,
-            RewardInterval = interval,
-        };
-        var crystal = new FungibleAssetValueRewardModel
-        {
-            Currency = "CRYSTAL",
-            PerInterval = 1,
-            RewardInterval = interval,
-        };
-        int minimumLevel = 50;
-        if (exist)
-        {
-            var policy = new RewardPolicyModel
-            {
-                Rewards = new List<RewardBaseModel>
-                {
-                    apPotion,
-                    hourGlass,
-                    crystal,
-                },
-                Free = true,
-                // 10 minutes
-                MinimumRequiredInterval = interval,
-                Activate = true,
-                MinimumLevel = minimumLevel,
-            };
-            await context.RewardPolicies.AddAsync(policy);
-            await context.SaveChangesAsync();
-        }
-
-        var rewards = exist
-            ? context.Rewards.ToList()
-            : new List<RewardBaseModel>
-            {
-                apPotion,
-                hourGlass,
-                crystal,
-            };
-        await Mutation.PutClaimPolicy(contextService, rewards, true, interval, true, minimumLevel, "password");
-        var updatedPolicy = await context.RewardPolicies.Include(r => r.Rewards).SingleAsync();
-        Assert.Equal(3, updatedPolicy.Rewards.Count);
-        Assert.Equal(3, context.Rewards.Count());
-        await context.Database.EnsureDeletedAsync();
-    }
-
-    [Fact]
-    public void PutClaimPolicy_Throw_UnauthorizedAccessException()
-    {
-        var contextService = Fixtures.GetContextService(_conn, "password");
-        Assert.ThrowsAsync<UnauthorizedAccessException>(() => Mutation.PutClaimPolicy(contextService, new List<RewardBaseModel>(), true, TimeSpan.Zero, true, 0, "pw"));
-
     }
 }

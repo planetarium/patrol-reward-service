@@ -26,4 +26,11 @@ public class NineChroniclesClientTest
         Assert.Equal(agentAddress, avatar.AgentAddress);
         Assert.IsType<int>(avatar.Level);
     }
+
+    [Fact]
+    public async Task Tip()
+    {
+        var tip = await _client.Tip();
+        Assert.True(tip > 0);
+    }
 }

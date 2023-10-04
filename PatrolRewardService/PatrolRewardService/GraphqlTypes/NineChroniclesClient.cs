@@ -117,10 +117,8 @@ query($txId: TxId!) {
         };
 
         GraphQLResponse<TransactionResultResponse> resp;
-        GraphQLResponse<object> resp2;
         try
         {
-            resp2 = await _client.SendQueryAsync<object>(request);
             resp = await _client.SendQueryAsync<TransactionResultResponse>(request);
         }
         catch (Exception e)
@@ -130,6 +128,37 @@ query($txId: TxId!) {
         }
 
         if (resp.Errors is null) return resp.Data.Transaction.TransactionResult;
+
+        var msg = resp.Errors.Aggregate("", (current, error) => current + error.Message + "\n");
+        throw new GraphQLException(msg);
+    }
+
+    public async Task<int> Tip()
+    {
+        var query = @"query {
+  nodeStatus {
+    tip {
+      index
+    }
+  }
+}";
+        var request = new GraphQLRequest
+        {
+            Query = query,
+        };
+
+        GraphQLResponse<NodeStatusResponse> resp;
+        try
+        {
+            resp = await _client.SendQueryAsync<NodeStatusResponse>(request);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("{Msg}", e.Message);
+            throw;
+        }
+
+        if (resp.Errors is null) return resp.Data.NodeStatus.Tip.Index;
 
         var msg = resp.Errors.Aggregate("", (current, error) => current + error.Message + "\n");
         throw new GraphQLException(msg);
@@ -181,5 +210,20 @@ query($txId: TxId!) {
     {
         public string exceptionName;
         public TransactionStatus txStatus;
+    }
+
+    public class NodeStatusResponse
+    {
+        public TipResultQuery NodeStatus;
+    }
+
+    public class TipResultQuery
+    {
+        public TipResult Tip;
+    }
+
+    public class TipResult
+    {
+        public int Index;
     }
 }

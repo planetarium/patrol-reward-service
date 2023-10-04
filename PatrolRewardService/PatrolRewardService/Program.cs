@@ -89,7 +89,6 @@ public class StartUp
             .AddGraphQLServer()
             .RegisterService<NineChroniclesClient>()
             .RegisterService<Signer>()
-            // .RegisterDbContext<RewardDbContext>(DbContextKind.Pooled)
             .RegisterService<ContextService>()
             .AddQueryType<QueryType>()
             .AddMutationType<MutationType>()
@@ -107,6 +106,14 @@ public class StartUp
 
         // Worker
         services.AddHostedService<TransactionWorker>();
+
+        services
+            .AddScoped(sp => sp.GetRequiredService<ContextService>().CreateDbContext())
+            .AddHostedService<HeadlessNodeCheckService>()
+            .AddSingleton<HeadlessNodeHealthCheck>()
+            .AddHealthChecks()
+            .AddDbContextCheck<RewardDbContext>()
+            .AddCheck<HeadlessNodeHealthCheck>(nameof(HeadlessNodeHealthCheck));
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -125,6 +132,7 @@ public class StartUp
         {
             endpoints.MapGraphQL();
             endpoints.MapControllers();
+            endpoints.MapHealthChecks("/ping");
         });
     }
 
