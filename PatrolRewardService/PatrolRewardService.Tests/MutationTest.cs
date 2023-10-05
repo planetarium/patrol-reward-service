@@ -78,6 +78,8 @@ public class MutationTest
         var serializedAgentAddress = agentAddress.ToString();
         var configOptions = new GraphqlClientOptions {Host = "http://9c-internal-validator-5.nine-chronicles.com", Port = 80};
         var client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(configOptions), new LoggerFactory());
+        await contextService.PutClaimPolicy(new List<RewardBaseModel>(), true, TimeSpan.FromHours(12), true, 1,
+            "password");
         var result = await Mutation.PutAvatar(contextService, client, serializedAvatarAddress, serializedAgentAddress);
         Assert.NotNull(result);
         Assert.Equal(avatarAddress, result.AvatarAddress);
