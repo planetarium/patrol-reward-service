@@ -173,6 +173,8 @@ public class ContextService : IAsyncDisposable, IDisposable
                 AgentAddress = new Address(agentAddress),
                 CreatedAt = DateTime.UtcNow
             };
+            var policy = GetPolicy(true, avatarState.Level);
+            avatar.LastClaimedAt = avatar.CreatedAt - policy.MinimumRequiredInterval;
         }
     
         avatar.Level = avatarState.Level;
