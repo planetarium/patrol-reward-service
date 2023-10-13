@@ -112,4 +112,16 @@ public class Mutation
     {
         return await contextService.RetryTransaction(signer, client, txId, password);
     }
+
+    public static async Task<List<TxId>> ReplaceTransactions(
+        ContextService contextService,
+        [Service] Signer signer,
+        [Service] NineChroniclesClient client,
+        int startNonce,
+        int endNonce,
+        string password
+    )
+    {
+        return await contextService.ReplaceTransactions(signer, client, startNonce, endNonce, password);
+    }
 }

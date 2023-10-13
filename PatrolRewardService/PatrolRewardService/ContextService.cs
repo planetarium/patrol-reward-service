@@ -236,6 +236,48 @@ public class ContextService : IAsyncDisposable, IDisposable
         await InsertTransaction(newTransaction);
         return txId;
     }
+
+    public async Task<List<TxId>> ReplaceTransactions(Signer signer, NineChroniclesClient client, int startNonce, int endNonce, string password)
+    {
+        if (password != _configuration["PatrolReward:ApiKey"])
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        var transactions = await _dbContext
+            .Transactions
+            .Include(t => t.Avatar)
+            .Include(t => t.Claim)
+            .ThenInclude(c => c.Garages)
+            .ThenInclude(g => g.Reward)
+            .Where(t => t.Result == TransactionStatus.INVALID && t.Nonce >= startNonce && t.Nonce <= endNonce)
+            .ToListAsync();
+        var result = new List<TxId>();
+        if (!transactions.Any())
+        {
+            return result;
+        }
+
+        foreach (var transaction in transactions)
+        {
+            var avatar = transaction.Avatar;
+            var memo = $"replace patrol reward {avatar.AvatarAddress} / {avatar.ClaimCount} / {transaction.Nonce} / {transaction.TxId}";
+            var action = transaction.Claim.ToAction(avatar.AvatarAddress, avatar.AgentAddress, memo);
+            var now = DateTime.UtcNow;
+            var tx = signer.Sign(transaction.Nonce, new[] {action}, 1 * Currencies.Mead, 4L, now);
+            transaction.CreatedAt = now;
+            transaction.TxId = tx.Id;
+            transaction.Payload = Convert.ToBase64String(tx.Serialize());
+            await client.StageTx(tx);
+            transaction.Result = TransactionStatus.STAGING;
+            _dbContext.Transactions.Update(transaction);
+            await _dbContext.SaveChangesAsync();
+            result.Add(tx.Id);
+        }
+
+        return result;
+    }
+
     public async ValueTask DisposeAsync()
     {
         await DisposeAsyncCore().ConfigureAwait(false);
