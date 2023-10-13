@@ -2,6 +2,7 @@ using Lib9c;
 using Libplanet.Crypto;
 using Libplanet.Types.Tx;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using PatrolRewardService.GraphqlTypes;
 using PatrolRewardService.Models;
 
@@ -265,13 +266,14 @@ public class ContextService : IAsyncDisposable, IDisposable
             var action = transaction.Claim.ToAction(avatar.AvatarAddress, avatar.AgentAddress, memo);
             var now = DateTime.UtcNow;
             var tx = signer.Sign(transaction.Nonce, new[] {action}, 1 * Currencies.Mead, 4L, now);
-            transaction.CreatedAt = now;
-            transaction.TxId = tx.Id;
-            transaction.Payload = Convert.ToBase64String(tx.Serialize());
+            var txId = tx.Id;
+            var payload = Convert.ToBase64String(tx.Serialize());
             await client.StageTx(tx);
-            transaction.Result = TransactionStatus.STAGING;
-            _dbContext.Transactions.Update(transaction);
-            await _dbContext.SaveChangesAsync();
+            await _dbContext.Database.BeginTransactionAsync();
+            var param = new NpgsqlParameter("@now", now);
+            await _dbContext.Database.ExecuteSqlRawAsync(
+                $"UPDATE transactions set tx_id = '{txId}', created_at = @now, payload = '{payload}', result = '{TransactionStatus.STAGING}' where nonce = {transaction.Nonce}", param);
+            await _dbContext.Database.CommitTransactionAsync();
             result.Add(tx.Id);
         }
 
