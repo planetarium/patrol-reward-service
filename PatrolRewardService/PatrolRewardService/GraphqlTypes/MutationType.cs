@@ -77,5 +77,39 @@ public class MutationType : ObjectType<Mutation>
                 return Mutation.RetryTransaction(contextService, signer, client, txId, password);
             })
             .Type<TxIdType>();
+        descriptor
+            .Field("replaceTransactions")
+            .UseServiceScope()
+            .Argument("startNonce", a => a.Type<NonNullType<IntType>>())
+            .Argument("endNonce", a => a.Type<NonNullType<IntType>>())
+            .Argument("password", a => a.Type<NonNullType<StringType>>())
+            .Resolve(context =>
+            {
+                var startNonce = context.ArgumentValue<int>("startNonce");
+                var endNonce = context.ArgumentValue<int>("endNonce");
+                var password = context.ArgumentValue<string>("password");
+                var contextService = context.Service<ContextService>();
+                var client = context.Service<NineChroniclesClient>();
+                var signer = context.Service<Signer>();
+                return Mutation.ReplaceTransactions(contextService, signer, client, startNonce, endNonce, password);
+            })
+            .Type<ListType<TxIdType>>();
+        descriptor
+            .Field("stageTransactions")
+            .UseServiceScope()
+            .Argument("startNonce", a => a.Type<NonNullType<IntType>>())
+            .Argument("endNonce", a => a.Type<NonNullType<IntType>>())
+            .Argument("password", a => a.Type<NonNullType<StringType>>())
+            .Resolve(context =>
+            {
+                var startNonce = context.ArgumentValue<int>("startNonce");
+                var endNonce = context.ArgumentValue<int>("endNonce");
+                var password = context.ArgumentValue<string>("password");
+                var contextService = context.Service<ContextService>();
+                var client = context.Service<NineChroniclesClient>();
+                var signer = context.Service<Signer>();
+                return Mutation.StageTransactions(contextService, client, startNonce, endNonce, password);
+            })
+            .Type<ListType<TxIdType>>();
     }
 }
