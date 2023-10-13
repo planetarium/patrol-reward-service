@@ -309,4 +309,32 @@ public class ContextService : IAsyncDisposable, IDisposable
     {
         await _dbContext.DisposeAsync();
     }
+
+    public async Task<List<TxId>> StageTransactions(NineChroniclesClient client, int startNonce, int endNonce, string password)
+    {
+        if (password != _configuration["PatrolReward:ApiKey"])
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        var transactions = await _dbContext
+            .Transactions
+            .Where(t => t.Result == TransactionStatus.INVALID && t.Nonce >= startNonce && t.Nonce <= endNonce)
+            .ToListAsync();
+        var result = new List<TxId>();
+        if (!transactions.Any())
+        {
+            return result;
+        }
+
+        foreach (var transaction in transactions)
+        {
+            var tx = Transaction.Deserialize(Convert.FromBase64String(transaction.Payload));
+            var txId = tx.Id;
+            await client.StageTx(tx);
+            result.Add(tx.Id);
+        }
+
+        return result;
+    }
 }

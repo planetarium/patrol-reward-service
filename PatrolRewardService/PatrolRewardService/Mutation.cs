@@ -124,4 +124,15 @@ public class Mutation
     {
         return await contextService.ReplaceTransactions(signer, client, startNonce, endNonce, password);
     }
+
+    public static async Task<List<TxId>> StageTransactions(
+        ContextService contextService,
+        [Service] NineChroniclesClient client,
+        int startNonce,
+        int endNonce,
+        string password
+    )
+    {
+        return await contextService.StageTransactions(client, startNonce, endNonce, password);
+    }
 }
