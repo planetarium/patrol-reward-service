@@ -219,7 +219,7 @@ public class ContextService : IAsyncDisposable, IDisposable
         var memo = $"retry patrol reward {avatar.AvatarAddress} / {avatar.ClaimCount}";
         var action = transaction.Claim.ToAction(avatar.AvatarAddress, avatar.AgentAddress, memo);
         var now = DateTime.UtcNow;
-        var tx = signer.Sign(newNonce, new[] {action}, 1 * Currencies.Mead, 4L, now);
+        var tx = signer.Sign(newNonce, new[] {action}, 1 * Currencies.Mead, 4L, now + TimeSpan.FromDays(1));
         var newTransaction = new TransactionModel
         {
             Avatar = avatar,
