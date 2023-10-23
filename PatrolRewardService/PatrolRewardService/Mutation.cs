@@ -96,8 +96,6 @@ public class Mutation
         transaction.Claim = claim;
         transaction.GasLimit = tx.GasLimit;
         transaction.Gas = 1;
-        await client.StageTx(tx);
-        transaction.Result = TransactionStatus.STAGING;
         await contextService.InsertTransaction(transaction);
         return transaction.TxId.ToHex();
     }
