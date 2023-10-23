@@ -107,7 +107,6 @@ public class MutationType : ObjectType<Mutation>
                 var password = context.ArgumentValue<string>("password");
                 var contextService = context.Service<ContextService>();
                 var client = context.Service<NineChroniclesClient>();
-                var signer = context.Service<Signer>();
                 return Mutation.StageTransactions(contextService, client, startNonce, endNonce, password);
             })
             .Type<ListType<TxIdType>>();
