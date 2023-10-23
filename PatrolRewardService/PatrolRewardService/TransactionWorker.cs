@@ -1,3 +1,4 @@
+using Libplanet.Types.Tx;
 using Microsoft.EntityFrameworkCore;
 using PatrolRewardService.GraphqlTypes;
 using PatrolRewardService.Models;
@@ -22,6 +23,7 @@ public class TransactionWorker : BackgroundService
             if (stoppingToken.IsCancellationRequested) stoppingToken.ThrowIfCancellationRequested();
 
             var dbContext = await _contextFactory.CreateDbContextAsync(stoppingToken);
+            await StageTx(dbContext, _nineChroniclesClient, stoppingToken);
             await UpdateTx(dbContext, _nineChroniclesClient, stoppingToken);
             await Task.Delay(3000, stoppingToken);
         }
@@ -37,6 +39,22 @@ public class TransactionWorker : BackgroundService
             var result = await client.Result(tx.TxId);
             tx.Result = result.txStatus;
             tx.ExceptionName = result.exceptionName;
+        }
+
+        dbContext.UpdateRange(transactions);
+        await dbContext.SaveChangesAsync(stoppingToken);
+    }
+
+    public static async Task StageTx(RewardDbContext dbContext, NineChroniclesClient client,
+        CancellationToken stoppingToken)
+    {
+        var transactions = dbContext.Transactions
+            .Where(p => p.Result == TransactionStatus.CREATED).ToList();
+        foreach (var transaction in transactions)
+        {
+            var tx = Transaction.Deserialize(Convert.FromBase64String(transaction.Payload));
+            await client.StageTx(tx);
+            transaction.Result = TransactionStatus.STAGING;
         }
 
         dbContext.UpdateRange(transactions);
