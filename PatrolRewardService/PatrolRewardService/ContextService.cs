@@ -208,7 +208,8 @@ public class ContextService : IAsyncDisposable, IDisposable
             .Include(t => t.Avatar)
             .Include(t => t.Claim)
             .ThenInclude(c => c.Garages)
-            .FirstOrDefaultAsync(t => t.TxId == txId && t.Result == TransactionStatus.FAILURE || t.Result == TransactionStatus.INVALID);
+            .ThenInclude(g => g.Reward)
+            .FirstOrDefaultAsync(t => t.TxId == txId);
         if (transaction is null)
         {
             return null;
@@ -232,10 +233,13 @@ public class ContextService : IAsyncDisposable, IDisposable
             GasLimit = tx.GasLimit,
             Gas = 1
         };
-        await client.StageTx(tx);
-        newTransaction.Result = TransactionStatus.STAGING;
+        await _dbContext.Database.BeginTransactionAsync();
         await InsertTransaction(newTransaction);
-        return txId;
+        await _dbContext.Database.ExecuteSqlRawAsync(
+            $"UPDATE transactions set result = '{TransactionStatus.FAILURE}', exception_name = '{memo}' where tx_id = '{transaction.TxId}'");
+        await _dbContext.Database.CommitTransactionAsync();
+
+        return tx.Id;
     }
 
     public async Task<List<TxId>> ReplaceTransactions(Signer signer, NineChroniclesClient client, int startNonce, int endNonce, string password)
