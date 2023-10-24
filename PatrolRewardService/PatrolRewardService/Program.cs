@@ -34,6 +34,9 @@ internal static class Program
                 SignerOptions signerOptions = new();
                 configRoot.GetSection(SignerOptions.SignerConfig)
                     .Bind(signerOptions);
+                WorkerOptions workerOptions = new();
+                configRoot.GetSection(WorkerOptions.WorkerConfig)
+                    .Bind(workerOptions);
             })
             .ConfigureWebHostDefaults(webBuilder => webBuilder.UseStartup<StartUp>());
     }
@@ -105,7 +108,10 @@ public class StartUp
         });
 
         // Worker
-        services.AddHostedService<TransactionWorker>();
+        services
+            .Configure<WorkerOptions>(Configuration.GetSection(WorkerOptions.WorkerConfig))
+            .AddHostedService<TransactionWorker>()
+            .AddHostedService<TransactionStageWorker>();
 
         services
             .AddScoped(sp => sp.GetRequiredService<ContextService>().CreateDbContext())
