@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Options;
 using PatrolRewardService.GraphqlTypes;
+using Sentry;
 
 namespace PatrolRewardService;
 
@@ -38,7 +39,12 @@ internal static class Program
                 configRoot.GetSection(WorkerOptions.WorkerConfig)
                     .Bind(workerOptions);
             })
-            .ConfigureWebHostDefaults(webBuilder => webBuilder.UseStartup<StartUp>());
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+                webBuilder
+                    .UseStartup<StartUp>()
+                    .UseSentry();
+            });
     }
 }
 
