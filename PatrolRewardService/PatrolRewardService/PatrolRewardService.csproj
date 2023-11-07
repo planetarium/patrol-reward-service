@@ -13,7 +13,7 @@
         <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.0.0" />
         <PackageReference Include="HotChocolate.AspNetCore" Version="13.5.1" />
         <PackageReference Include="HotChocolate.Data.EntityFramework" Version="13.5.1" />
-        <PackageReference Include="Libplanet" Version="3.3.1" />
+        <PackageReference Include="Libplanet" Version="3.6.0" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.5" />
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.10" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.10">
@@ -24,7 +24,7 @@
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.4" />
         <PackageReference Include="Sentry.AspNetCore" Version="3.40.1" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-        <PackageReference Include="Lib9c" Version="0.5.0-dev.802c95f0f08814f44ba8c7630e1a90f7dc16bbc6" />
+        <PackageReference Include="Lib9c" Version="1.1.0-dev.1969277b9c5dedcd3d6e5cd46a48d5f259f2afca" />
     </ItemGroup>
 
     <ItemGroup>
