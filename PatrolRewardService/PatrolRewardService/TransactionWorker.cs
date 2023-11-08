@@ -40,7 +40,7 @@ public class TransactionWorker : BackgroundService
         {
             var result = await client.Result(tx.TxId);
             tx.Result = result.txStatus;
-            tx.ExceptionName = result.exceptionName;
+            tx.ExceptionName = result.exceptionNames?.FirstOrDefault();
         }
 
         dbContext.UpdateRange(transactions);

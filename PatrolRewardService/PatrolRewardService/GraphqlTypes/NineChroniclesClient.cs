@@ -100,7 +100,7 @@ query($txId: TxId!) {
   transaction {
     transactionResult(txId: $txId) {
       txStatus
-      exceptionName
+      exceptionNames
       blockIndex
     }
   }
@@ -208,7 +208,7 @@ query($txId: TxId!) {
 
     public class TransactionResult
     {
-        public string exceptionName;
+        public List<string>? exceptionNames;
         public TransactionStatus txStatus;
     }
 
