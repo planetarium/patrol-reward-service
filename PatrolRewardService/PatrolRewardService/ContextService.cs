@@ -218,7 +218,7 @@ public class ContextService : IAsyncDisposable, IDisposable
         var newNonce = await GetNonce();
         var avatar = transaction.Avatar;
         var memo = $"retry patrol reward {avatar.AvatarAddress} / {avatar.ClaimCount}";
-        var action = transaction.Claim.ToAction(avatar.AvatarAddress, avatar.AgentAddress, memo);
+        var action = transaction.Claim.ToClaimItems(avatar.AvatarAddress, avatar.AgentAddress, memo);
         var now = DateTime.UtcNow;
         var tx = signer.Sign(newNonce, new[] {action}, 1 * Currencies.Mead, 4L, now + TimeSpan.FromDays(1));
         var newTransaction = new TransactionModel
@@ -267,7 +267,7 @@ public class ContextService : IAsyncDisposable, IDisposable
         {
             var avatar = transaction.Avatar;
             var memo = $"replace patrol reward {avatar.AvatarAddress} / {transaction.ClaimCount} / {transaction.Nonce} / {transaction.TxId}";
-            var action = transaction.Claim.ToAction(avatar.AvatarAddress, avatar.AgentAddress, memo);
+            var action = transaction.Claim.ToClaimItems(avatar.AvatarAddress, avatar.AgentAddress, memo);
             var now = DateTime.UtcNow;
             var tx = signer.Sign(transaction.Nonce, new[] {action}, 1 * Currencies.Mead, 4L, now + TimeSpan.FromDays(1));
             var txId = tx.Id;

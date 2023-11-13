@@ -24,7 +24,7 @@
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.4" />
         <PackageReference Include="Sentry.AspNetCore" Version="3.40.1" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-        <PackageReference Include="Lib9c" Version="1.1.0-dev.1969277b9c5dedcd3d6e5cd46a48d5f259f2afca" />
+        <PackageReference Include="Lib9c" Version="1.1.0-dev.cdbd6eab4ba0b3082b60e7ddebf0006b9ba992a2" />
     </ItemGroup>
 
     <ItemGroup>
