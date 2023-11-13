@@ -275,7 +275,7 @@ public class ContextService : IAsyncDisposable, IDisposable
             await _dbContext.Database.BeginTransactionAsync();
             var param = new NpgsqlParameter("@now", now);
             await _dbContext.Database.ExecuteSqlRawAsync(
-                $"UPDATE transactions set tx_id = '{txId}', created_at = @now, payload = '{payload}', result = '{TransactionStatus.STAGING}' where nonce = {transaction.Nonce}", param);
+                $"UPDATE transactions set tx_id = '{txId}', created_at = @now, payload = '{payload}', result = '{TransactionStatus.CREATED}' where nonce = {transaction.Nonce}", param);
             await _dbContext.Database.CommitTransactionAsync();
             result.Add(tx.Id);
         }
