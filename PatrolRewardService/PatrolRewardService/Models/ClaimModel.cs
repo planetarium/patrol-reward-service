@@ -66,31 +66,24 @@ public class ClaimModel
         {
             switch (garage.Reward)
             {
-#pragma warning disable CS0618
                 case FungibleItemRewardModel fungibleItemReward:
-                    fungibleAssetValues.Add(garage.Count * Currency.Legacy($"Item_NT_{fungibleItemReward.ItemId}", decimalPlaces: 0, minters: null));
+                    var itemCurrency = Currencies.GetItemCurrency(fungibleItemReward.ItemId, false);
+                    fungibleAssetValues.Add(garage.Count * itemCurrency);
                     break;
                 case FungibleAssetValueRewardModel fungibleAssetValueReward:
-                    switch (fungibleAssetValueReward.Currency)
-                    {
-                        case "CRYSTAL":
-                            var currency = Currencies.Crystal;
-                            var ticker = $"FAV__{currency.Ticker}";
-                            var wrappedCurrency = Currency.Legacy(ticker, currency.DecimalPlaces, null);
-#pragma warning restore CS0618
-                            fungibleAssetValues.Add(wrappedCurrency * garage.Count);
-                            break;
-                        default:
-                            throw new InvalidCurrencyException(
-                                $"{fungibleAssetValueReward.Currency} does not support.");
-                    }
+                    var favCurrency = Currencies.GetMinterlessCurrency(fungibleAssetValueReward.Currency);
+                    var wrappedCurrency = Currencies.GetWrappedCurrency(favCurrency);
+                    fungibleAssetValues.Add(wrappedCurrency * garage.Count);
                     break;
             }
         }
         if (!fungibleAssetValues.Any()) throw new ClaimIntervalException("no reward available. please wait more time.");
-        return new ClaimItems(new List<(Address, IReadOnlyList<FungibleAssetValue>)>
-        {
-            (avatarAddress, fungibleAssetValues)
-        });
+        return new ClaimItems(
+            new List<(Address, IReadOnlyList<FungibleAssetValue>)>
+            {
+                (avatarAddress, fungibleAssetValues)
+            },
+            memo
+        );
     }
 }
