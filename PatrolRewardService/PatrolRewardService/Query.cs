@@ -33,4 +33,9 @@ public class Query
     {
         return contextService.Transactions();
     }
+
+    public static async Task<int> InvalidTxCount(ContextService contextService)
+    {
+        return await contextService.InvalidTxCount();
+    }
 }
