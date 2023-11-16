@@ -25,9 +25,16 @@ public class TransactionWorker : BackgroundService
         {
             if (stoppingToken.IsCancellationRequested) stoppingToken.ThrowIfCancellationRequested();
 
-            var dbContext = await _contextFactory.CreateDbContextAsync(stoppingToken);
-            await UpdateTx(dbContext, _nineChroniclesClient, stoppingToken);
-            await Task.Delay(_interval, stoppingToken);
+            try
+            {
+                var dbContext = await _contextFactory.CreateDbContextAsync(stoppingToken);
+                await UpdateTx(dbContext, _nineChroniclesClient, stoppingToken);
+                await Task.Delay(_interval, stoppingToken);
+            }
+            catch (InvalidOperationException)
+            {
+                // pass
+            }
         }
     }
 
