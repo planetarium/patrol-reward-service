@@ -19,6 +19,7 @@ public class QueryTypeTest
     private readonly ServiceProvider _provider;
     private readonly RequestExecutorProxy _executor;
     private readonly IDbContextFactory<RewardDbContext> _contextFactory;
+    private readonly RewardPolicyModel _policy;
 
     public QueryTypeTest()
     {
@@ -52,8 +53,32 @@ public class QueryTypeTest
         var resolver = _provider.GetRequiredService<IRequestExecutorResolver>();
         _executor = new RequestExecutorProxy(resolver, Schema.DefaultName);
         _contextFactory = _provider.GetRequiredService<IDbContextFactory<RewardDbContext>>();
-
+        var interval = TimeSpan.FromHours(4);
+        List<RewardBaseModel> rewards = new()
+        {
+            new FungibleItemRewardModel
+            {
+                ItemId = 800201,
+                PerInterval = 20,
+                RewardInterval = interval,
+            },
+            new FungibleAssetValueRewardModel
+            {
+                Currency = "CRYSTAL",
+                PerInterval = 400,
+                RewardInterval = interval,
+            }
+        };
+        _policy = new RewardPolicyModel
+        {
+            Free = true,
+            MinimumRequiredInterval = interval,
+            Activate = true,
+            MinimumLevel = 250,
+            Rewards = rewards,
+        };
     }
+
     [Fact]
     public async Task GetAvatar()
     {
@@ -100,31 +125,7 @@ public class QueryTypeTest
         var context = await _contextFactory.CreateDbContextAsync();
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
-        var interval = TimeSpan.FromHours(4);
-        var rewards = new List<RewardBaseModel>
-        {
-            new FungibleItemRewardModel
-            {
-                ItemId = 800201,
-                PerInterval = 20,
-                RewardInterval = interval,
-            },
-            new FungibleAssetValueRewardModel
-            {
-                Currency = "CRYSTAL",
-                PerInterval = 400,
-                RewardInterval = interval,
-            }
-        };
-        var policy = new RewardPolicyModel
-        {
-            Free = true,
-            MinimumRequiredInterval = interval,
-            Activate = true,
-            MinimumLevel = 250,
-            Rewards = rewards,
-        };
-        await context.RewardPolicies.AddAsync(policy);
+        await context.RewardPolicies.AddAsync(_policy);
         await context.SaveChangesAsync();
 
         var query = @"query {
@@ -163,32 +164,7 @@ public class QueryTypeTest
         var context = await _contextFactory.CreateDbContextAsync();
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
-
-        var interval = TimeSpan.FromHours(4);
-        var rewards = new List<RewardBaseModel>
-        {
-            new FungibleItemRewardModel
-            {
-                ItemId = 800201,
-                PerInterval = 20,
-                RewardInterval = interval,
-            },
-            new FungibleAssetValueRewardModel
-            {
-                Currency = "CRYSTAL",
-                PerInterval = 400,
-                RewardInterval = interval,
-            }
-        };
-        var policy = new RewardPolicyModel
-        {
-            Free = true,
-            MinimumRequiredInterval = interval,
-            Activate = true,
-            MinimumLevel = 250,
-            Rewards = rewards,
-        };
-
+        
         var txId = "b7925dbf5a532dd18bba7408177b752ccf6ca2e17034fa18f3e4b8562644fb09";
         var avatarAddress = new Address("0xaDBa1CF2115c28E1DA761C65a06bADe620D66839");
         var agentAddress = new Address("0x17724085F1d1b5E7a1b7B8857fb7FF14416867C1");
@@ -202,7 +178,7 @@ public class QueryTypeTest
         var claim = new ClaimModel
         {
             Avatar = avatar,
-            Policy = policy,
+            Policy = _policy,
         };
         var transaction = new TransactionModel
         {
@@ -247,31 +223,6 @@ public class QueryTypeTest
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
 
-        var interval = TimeSpan.FromHours(4);
-        var rewards = new List<RewardBaseModel>
-        {
-            new FungibleItemRewardModel
-            {
-                ItemId = 800201,
-                PerInterval = 20,
-                RewardInterval = interval,
-            },
-            new FungibleAssetValueRewardModel
-            {
-                Currency = "CRYSTAL",
-                PerInterval = 400,
-                RewardInterval = interval,
-            }
-        };
-        var policy = new RewardPolicyModel
-        {
-            Free = true,
-            MinimumRequiredInterval = interval,
-            Activate = true,
-            MinimumLevel = 250,
-            Rewards = rewards,
-        };
-
         var txId = "b7925dbf5a532dd18bba7408177b752ccf6ca2e17034fa18f3e4b8562644fb09";
         var avatarAddress = new Address("0xaDBa1CF2115c28E1DA761C65a06bADe620D66839");
         var agentAddress = new Address("0x17724085F1d1b5E7a1b7B8857fb7FF14416867C1");
@@ -285,7 +236,7 @@ public class QueryTypeTest
         var claim = new ClaimModel
         {
             Avatar = avatar,
-            Policy = policy,
+            Policy = _policy,
         };
         var transaction = new TransactionModel
         {
@@ -324,6 +275,57 @@ public class QueryTypeTest
         data.MatchSnapshot(SnapshotNameExtension.Create(status));
         await context.Database.EnsureDeletedAsync();
     }
+
+    [Fact]
+    public async Task InvalidTxCount()
+    {
+        var context = await _contextFactory.CreateDbContextAsync();
+        await context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureCreatedAsync();
+        
+        var txId = "b7925dbf5a532dd18bba7408177b752ccf6ca2e17034fa18f3e4b8562644fb09";
+        var avatarAddress = new Address("0xaDBa1CF2115c28E1DA761C65a06bADe620D66839");
+        var agentAddress = new Address("0x17724085F1d1b5E7a1b7B8857fb7FF14416867C1");
+        var avatar = new AvatarModel
+        {
+            AvatarAddress = avatarAddress,
+            AgentAddress = agentAddress,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var claim = new ClaimModel
+        {
+            Avatar = avatar,
+            Policy = _policy,
+        };
+        var transaction = new TransactionModel
+        {
+            TxId = TxId.FromHex(txId),
+            Payload = "payload",
+            ClaimCount = 0,
+            Claim = claim,
+            Avatar = avatar,
+            Nonce = 0,
+            GasLimit = 4,
+            Gas = 1,
+            Result = TransactionStatus.INVALID,
+        };
+        await context.Transactions.AddAsync(transaction);
+        await context.SaveChangesAsync();
+
+        var query = "query { invalidTxCount() }";
+
+        var request = QueryRequestBuilder.New()
+            .SetQuery(query)
+            .SetServices(_provider)
+            .Create();
+        IExecutionResult result = await _executor.ExecuteAsync(request);
+        var data = ExecuteRequestAsStreamAsync(result);
+        data.MatchSnapshot();
+        await context.Database.EnsureDeletedAsync();
+        
+    }
+
     private static string ExecuteRequestAsStreamAsync(
         IExecutionResult result)
     {

@@ -34,5 +34,12 @@ public class QueryType : ObjectType<Query>
                 return Query.Transactions(contextService);
             })
             .UseFiltering();
+        descriptor.Field("invalidTxCount")
+            .Resolve(context =>
+            {
+                var contextService = context.Service<ContextService>();
+                return Query.InvalidTxCount(contextService);
+            })
+            .Type<IntType>();
     }
 }

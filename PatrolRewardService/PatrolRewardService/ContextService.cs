@@ -340,4 +340,9 @@ public class ContextService : IAsyncDisposable, IDisposable
 
         return result;
     }
+
+    public async Task<int> InvalidTxCount()
+    {
+        return await _dbContext.Transactions.CountAsync(t => t.Result == TransactionStatus.INVALID);
+    }
 }
