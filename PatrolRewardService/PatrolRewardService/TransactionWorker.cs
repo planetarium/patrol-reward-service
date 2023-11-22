@@ -11,12 +11,14 @@ public class TransactionWorker : BackgroundService
     private readonly IDbContextFactory<RewardDbContext> _contextFactory;
     private readonly NineChroniclesClient _nineChroniclesClient;
     private readonly int _interval;
+    private readonly ILogger<TransactionWorker> _logger;
 
-    public TransactionWorker(NineChroniclesClient client, IDbContextFactory<RewardDbContext> contextFactory,IOptions<WorkerOptions> options)
+    public TransactionWorker(NineChroniclesClient client, IDbContextFactory<RewardDbContext> contextFactory,IOptions<WorkerOptions> options, ILoggerFactory loggerFactory)
     {
         _nineChroniclesClient = client;
         _contextFactory = contextFactory;
         _interval = options.Value.ResultInterval;
+        _logger = loggerFactory.CreateLogger<TransactionWorker>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -34,6 +36,11 @@ public class TransactionWorker : BackgroundService
             catch (InvalidOperationException)
             {
                 // pass
+            }
+            catch (Exception e)
+            {
+                // pass
+                _logger.LogWarning(e, "worker raise error");
             }
         }
     }
