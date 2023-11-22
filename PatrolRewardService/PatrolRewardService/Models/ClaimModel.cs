@@ -58,4 +58,32 @@ public class ClaimModel
         return new UnloadFromMyGarages(avatarAddress, fungibleIdAndCounts: fungibleIdAndCounts,
             fungibleAssetValues: fungibleAssetValues, memo: memo);
     }
+
+    public ClaimItems ToClaimItems(Address avatarAddress, Address agentAddress, string? memo = null)
+    {
+        var fungibleAssetValues = new List<FungibleAssetValue>();
+        foreach (var garage in Garages)
+        {
+            switch (garage.Reward)
+            {
+                case FungibleItemRewardModel fungibleItemReward:
+                    var itemCurrency = Currencies.GetItemCurrency(fungibleItemReward.ItemId, false);
+                    fungibleAssetValues.Add(garage.Count * itemCurrency);
+                    break;
+                case FungibleAssetValueRewardModel fungibleAssetValueReward:
+                    var favCurrency = Currencies.GetMinterlessCurrency(fungibleAssetValueReward.Currency);
+                    var wrappedCurrency = Currencies.GetWrappedCurrency(favCurrency);
+                    fungibleAssetValues.Add(wrappedCurrency * garage.Count);
+                    break;
+            }
+        }
+        if (!fungibleAssetValues.Any()) throw new ClaimIntervalException("no reward available. please wait more time.");
+        return new ClaimItems(
+            new List<(Address, IReadOnlyList<FungibleAssetValue>)>
+            {
+                (avatarAddress, fungibleAssetValues)
+            },
+            memo
+        );
+    }
 }

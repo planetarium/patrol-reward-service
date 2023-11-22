@@ -86,7 +86,7 @@ public class Mutation
 
         // prepare action plain value.
         var memo = $"patrol reward {avatarAddress} / {avatar.ClaimCount}";
-        var action = claim.ToAction(avatarState.Address, avatarState.AgentAddress, memo);
+        var action = claim.ToClaimItems(avatarState.Address, avatarState.AgentAddress, memo);
         long nonce = await contextService.GetNonce();
         var tx = signer.Sign(nonce, new[] {action}, 1 * Currencies.Mead, 4L, now + TimeSpan.FromDays(1));
         transaction.TxId = tx.Id;
