@@ -242,6 +242,58 @@ public class ContextService : IAsyncDisposable, IDisposable
         return tx.Id;
     }
 
+    public async Task<List<TxId>> RetryTransactions(Signer signer, NineChroniclesClient client, int startNonce, int endNonce, string password)
+    {
+        if (password != _configuration["PatrolReward:ApiKey"])
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        var transactions = await _dbContext
+            .Transactions
+            .Include(t => t.Avatar)
+            .Include(t => t.Claim)
+            .ThenInclude(c => c.Garages)
+            .ThenInclude(g => g.Reward)
+            .Where(t => t.Result == TransactionStatus.FAILURE && t.Nonce >= startNonce && t.Nonce <= endNonce)
+            .ToListAsync();
+        var result = new List<TxId>();
+        if (!transactions.Any())
+        {
+            return result;
+        }
+
+        foreach (var transaction in transactions)
+        {
+            var newNonce = await GetNonce();
+            var avatar = transaction.Avatar;
+            var memo = $"retry patrol reward {avatar.AvatarAddress} / {avatar.ClaimCount}";
+            var action = transaction.Claim.ToClaimItems(avatar.AvatarAddress, avatar.AgentAddress, memo);
+            var now = DateTime.UtcNow;
+            var tx = signer.Sign(newNonce, new[] {action}, 1 * Currencies.Mead, 4L, now + TimeSpan.FromDays(1));
+            var newTransaction = new TransactionModel
+            {
+                Avatar = avatar,
+                CreatedAt = now,
+                ClaimCount = avatar.ClaimCount,
+                Nonce = newNonce,
+                TxId = tx.Id,
+                Payload = Convert.ToBase64String(tx.Serialize()),
+                Claim = transaction.Claim,
+                GasLimit = tx.GasLimit,
+                Gas = 1
+            };
+            await _dbContext.Database.BeginTransactionAsync();
+            await InsertTransaction(newTransaction);
+            await _dbContext.Database.ExecuteSqlRawAsync(
+                $"UPDATE transactions set result = '{TransactionStatus.FAILURE}', exception_name = '{memo}' where tx_id = '{transaction.TxId}'");
+            await _dbContext.Database.CommitTransactionAsync();
+            result.Add(tx.Id);
+        }
+
+        return result;
+    }
+
     public async Task<List<TxId>> ReplaceTransactions(Signer signer, NineChroniclesClient client, int startNonce, int endNonce, string password)
     {
         if (password != _configuration["PatrolReward:ApiKey"])
