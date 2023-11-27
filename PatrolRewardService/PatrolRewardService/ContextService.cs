@@ -230,7 +230,7 @@ public class ContextService : IAsyncDisposable, IDisposable
         {
             Avatar = avatar,
             CreatedAt = now,
-            ClaimCount = avatar.ClaimCount,
+            ClaimCount = transaction.ClaimCount,
             Nonce = newNonce,
             TxId = tx.Id,
             Payload = Convert.ToBase64String(tx.Serialize()),
