@@ -215,6 +215,11 @@ public class ContextService : IAsyncDisposable, IDisposable
             return null;
         }
 
+        return await RetryTx(signer, transaction);
+    }
+
+    private async Task<TxId> RetryTx(Signer signer, TransactionModel transaction)
+    {
         var newNonce = await GetNonce();
         var avatar = transaction.Avatar;
         var memo = $"retry patrol reward {avatar.AvatarAddress} / {avatar.ClaimCount}";
@@ -265,30 +270,8 @@ public class ContextService : IAsyncDisposable, IDisposable
 
         foreach (var transaction in transactions)
         {
-            var newNonce = await GetNonce();
-            var avatar = transaction.Avatar;
-            var memo = $"retry patrol reward {avatar.AvatarAddress} / {avatar.ClaimCount}";
-            var action = transaction.Claim.ToClaimItems(avatar.AvatarAddress, avatar.AgentAddress, memo);
-            var now = DateTime.UtcNow;
-            var tx = signer.Sign(newNonce, new[] {action}, 1 * Currencies.Mead, 4L, now + TimeSpan.FromDays(1));
-            var newTransaction = new TransactionModel
-            {
-                Avatar = avatar,
-                CreatedAt = now,
-                ClaimCount = avatar.ClaimCount,
-                Nonce = newNonce,
-                TxId = tx.Id,
-                Payload = Convert.ToBase64String(tx.Serialize()),
-                Claim = transaction.Claim,
-                GasLimit = tx.GasLimit,
-                Gas = 1
-            };
-            await _dbContext.Database.BeginTransactionAsync();
-            await InsertTransaction(newTransaction);
-            await _dbContext.Database.ExecuteSqlRawAsync(
-                $"UPDATE transactions set result = '{TransactionStatus.FAILURE}', exception_name = '{memo}' where tx_id = '{transaction.TxId}'");
-            await _dbContext.Database.CommitTransactionAsync();
-            result.Add(tx.Id);
+            TxId txId = await RetryTx(signer, transaction);
+            result.Add(txId);
         }
 
         return result;
