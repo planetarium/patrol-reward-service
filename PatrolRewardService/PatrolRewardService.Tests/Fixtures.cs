@@ -19,7 +19,9 @@ public static class Fixtures
 #pragma warning disable EF1001
         var contextFactory = new DbContextFactory<RewardDbContext>(null!,
             new DbContextOptionsBuilder<RewardDbContext>().UseNpgsql(connectionString)
-                .UseLowerCaseNamingConvention().Options, new DbContextFactorySource<RewardDbContext>());
+                .EnableSensitiveDataLogging()
+                .UseSnakeCaseNamingConvention()
+                .Options, new DbContextFactorySource<RewardDbContext>());
 #pragma warning restore EF1001
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>

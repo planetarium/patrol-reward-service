@@ -215,6 +215,11 @@ public class ContextService : IAsyncDisposable, IDisposable
             return null;
         }
 
+        return await RetryTx(signer, transaction);
+    }
+
+    private async Task<TxId> RetryTx(Signer signer, TransactionModel transaction)
+    {
         var newNonce = await GetNonce();
         var avatar = transaction.Avatar;
         var memo = $"retry patrol reward {avatar.AvatarAddress} / {avatar.ClaimCount}";
@@ -225,7 +230,7 @@ public class ContextService : IAsyncDisposable, IDisposable
         {
             Avatar = avatar,
             CreatedAt = now,
-            ClaimCount = avatar.ClaimCount,
+            ClaimCount = transaction.ClaimCount,
             Nonce = newNonce,
             TxId = tx.Id,
             Payload = Convert.ToBase64String(tx.Serialize()),
@@ -240,6 +245,36 @@ public class ContextService : IAsyncDisposable, IDisposable
         await _dbContext.Database.CommitTransactionAsync();
 
         return tx.Id;
+    }
+
+    public async Task<List<TxId>> RetryTransactions(Signer signer, NineChroniclesClient client, int startNonce, int endNonce, string password)
+    {
+        if (password != _configuration["PatrolReward:ApiKey"])
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        var transactions = await _dbContext
+            .Transactions
+            .Include(t => t.Avatar)
+            .Include(t => t.Claim)
+            .ThenInclude(c => c.Garages)
+            .ThenInclude(g => g.Reward)
+            .Where(t => t.Result == TransactionStatus.FAILURE && t.Nonce >= startNonce && t.Nonce <= endNonce)
+            .ToListAsync();
+        var result = new List<TxId>();
+        if (!transactions.Any())
+        {
+            return result;
+        }
+
+        foreach (var transaction in transactions)
+        {
+            TxId txId = await RetryTx(signer, transaction);
+            result.Add(txId);
+        }
+
+        return result;
     }
 
     public async Task<List<TxId>> ReplaceTransactions(Signer signer, NineChroniclesClient client, int startNonce, int endNonce, string password)

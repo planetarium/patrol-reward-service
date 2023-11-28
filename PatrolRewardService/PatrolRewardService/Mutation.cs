@@ -50,23 +50,32 @@ public class Mutation
         // Check claim policy
         var policy = contextService.GetPolicy(free, avatarState.Level);
 
+        // prepare claim.
+        var txId = await ClaimTx(contextService, signer, avatarAddress, avatar, policy, avatarState);
+        return txId.ToHex();
+    }
+
+    public static async Task<TxId> ClaimTx(ContextService contextService, Signer signer, string avatarAddress,
+        AvatarModel avatar, RewardPolicyModel policy, NineChroniclesClient.Avatar avatarState)
+    {
         // check claim interval 
         var lastClaimedAt = avatar.LastClaimedAt ?? avatar.CreatedAt;
         var now = DateTime.UtcNow;
         var diff = now - lastClaimedAt;
 
-        if (diff >= policy.MinimumRequiredInterval)
-            // save pending tx for continuation.
-            transaction = new TransactionModel
-            {
-                Avatar = avatar,
-                CreatedAt = now,
-                ClaimCount = avatar.ClaimCount
-            };
-        else
+        if (diff < policy.MinimumRequiredInterval)
+        {
             throw new ClaimIntervalException($"required minimum interval time {policy.MinimumRequiredInterval}.");
+        }
 
-        // prepare claim.
+        // save pending tx for continuation.
+        var transaction = new TransactionModel
+        {
+            Avatar = avatar,
+            CreatedAt = now,
+            ClaimCount = avatar.ClaimCount
+        };
+
         avatar.LastClaimedAt = now;
         ClaimModel claim = new()
         {
@@ -97,7 +106,7 @@ public class Mutation
         transaction.GasLimit = tx.GasLimit;
         transaction.Gas = 1;
         await contextService.InsertTransaction(transaction);
-        return transaction.TxId.ToHex();
+        return transaction.TxId;
     }
 
     public static async Task<TxId?> RetryTransaction(
@@ -109,6 +118,18 @@ public class Mutation
     )
     {
         return await contextService.RetryTransaction(signer, client, txId, password);
+    }
+
+    public static async Task<List<TxId>> RetryTransactions(
+        ContextService contextService,
+        [Service] Signer signer,
+        [Service] NineChroniclesClient client,
+        int startNonce,
+        int endNonce,
+        string password
+    )
+    {
+        return await contextService.RetryTransactions(signer, client, startNonce, endNonce, password);
     }
 
     public static async Task<List<TxId>> ReplaceTransactions(
