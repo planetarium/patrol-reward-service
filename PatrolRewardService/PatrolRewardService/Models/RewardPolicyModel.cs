@@ -22,4 +22,8 @@ public class RewardPolicyModel
 
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime EndedAt { get; set; } = DateTime.MaxValue;
 }
