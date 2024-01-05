@@ -376,8 +376,12 @@ public class ContextService : IAsyncDisposable, IDisposable
         return result;
     }
 
-    public async Task<int> InvalidTxCount()
+    /// <summary>
+    /// Retrieves the count of pending transactions in the database.
+    /// </summary>
+    /// <returns>The number of pending transactions.</returns>
+    public async Task<int> PendingTxCount()
     {
-        return await _dbContext.Transactions.CountAsync(t => t.Result == TransactionStatus.INVALID);
+        return await _dbContext.Transactions.CountAsync(t => t.Result == TransactionStatus.INVALID || t.Result == TransactionStatus.STAGING);
     }
 }
