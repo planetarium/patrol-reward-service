@@ -45,10 +45,11 @@ public class ContextService : IAsyncDisposable, IDisposable
 
     public RewardPolicyModel GetPolicy(bool free, int level)
     {
+        var now = DateTime.UtcNow;
         var policies = _dbContext
             .RewardPolicies
             .Include(p => p.Rewards)
-            .Where(p => p.Activate && p.Free == free)
+            .Where(p => p.Activate && p.Free == free && p.StartedAt <= now && now <= p.EndedAt)
             .OrderByDescending(p => p.MinimumLevel)
             .ToList();
         foreach (var policy in policies)
@@ -84,8 +85,23 @@ public class ContextService : IAsyncDisposable, IDisposable
             );
     }
 
+    /// <summary>
+    /// Updates the claim policy with the specified parameters and returns the updated policy ID.
+    /// </summary>
+    /// <param name="rewards">The list of rewards to be associated with the policy.</param>
+    /// <param name="free">A flag indicating whether the policy is free or not.</param>
+    /// <param name="interval">The time interval for the policy.</param>
+    /// <param name="activate">A flag indicating whether the policy is activated or not.</param>
+    /// <param name="minimumLevel">The minimum required level for the policy.</param>
+    /// <param name="password">The password used for authentication.</param>
+    /// <param name="startedAt">The start date and time for the policy.</param>
+    /// <param name="endedAt">The end date and time for the policy.</param>
+    /// <param name="maxLevel">
+    /// The maximum level allowed for the policy. If not specified, there is no maximum level restriction.
+    /// </param>
+    /// <returns>The ID of the updated claim policy.</returns>
     public async Task<int> PutClaimPolicy(List<RewardBaseModel> rewards, bool free, TimeSpan interval, bool activate,
-        int minimumLevel, string password, int? maxLevel = null)
+        int minimumLevel, string password, DateTime startedAt, DateTime endedAt, int? maxLevel = null)
     {
         if (password != _configuration["PatrolReward:ApiKey"])
         {
@@ -98,7 +114,7 @@ public class ContextService : IAsyncDisposable, IDisposable
         var policy = await _dbContext
             .RewardPolicies
             .Include(r => r.Rewards)
-            .FirstOrDefaultAsync(r => r.Free == free && r.Activate == activate && r.MinimumLevel == minimumLevel);
+            .FirstOrDefaultAsync(r => r.Free == free && r.Activate == activate && r.MinimumLevel == minimumLevel && r.StartedAt == startedAt);
         if (policy is null)
         {
             policy = new RewardPolicyModel
@@ -109,6 +125,8 @@ public class ContextService : IAsyncDisposable, IDisposable
                 Activate = activate,
                 MinimumLevel = minimumLevel,
                 MaxLevel = maxLevel,
+                StartedAt = startedAt,
+                EndedAt = endedAt,
             };
             await _dbContext.RewardPolicies.AddAsync(policy);
         }

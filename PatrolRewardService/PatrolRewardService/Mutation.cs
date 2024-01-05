@@ -6,8 +6,22 @@ using PatrolRewardService.Models;
 
 namespace PatrolRewardService;
 
+/// <summary>
+/// Class that contains methods for mutation operations.
+/// </summary>
 public class Mutation
 {
+    /// <summary>
+    /// Updates the avatar information in the context service and returns the updated AvatarModel.
+    /// </summary>
+    /// <param name="contextService">An instance of the ContextService class.</param>
+    /// <param name="client">An instance of the NineChroniclesClient class.</param>
+    /// <param name="avatarAddress">The address of the avatar.</param>
+    /// <param name="agentAddress">The address of the agent.</param>
+    /// <param name="save">True to save the updated avatar in the context service, false otherwise (default is true).</param>
+    /// <returns>
+    /// A Task object representing the asynchronous operation. The task result is an instance of the AvatarModel class.
+    /// </returns>
     public static async Task<AvatarModel> PutAvatar(
         ContextService contextService,
         [Service] NineChroniclesClient client,
@@ -20,10 +34,25 @@ public class Mutation
         return await contextService.PutAvatar(avatarState, avatarAddress, agentAddress, save);
     }
 
+    /// <summary>
+    /// Upsert the claim policy.
+    /// </summary>
+    /// <param name="contextService">The context service.</param>
+    /// <param name="rewards">The list of reward base models.</param>
+    /// <param name="free">Whether the claim policy is free or not.</param>
+    /// <param name="interval">The time interval between claims.</param>
+    /// <param name="activate">Whether to activate the claim policy or not.</param>
+    /// <param name="minimumLevel">The minimum level required to claim.</param>
+    /// <param name="password">The password.</param>
+    /// <param name="startedAt">The start date and time of the claim policy.</param>
+    /// <param name="endedAt">The end date and time of the claim policy.</param>
+    /// <param name="maxLevel">The maximum level required to claim (optional).</param>
+    /// <returns>The id of updated claim policies.</returns>
     public static async Task<int> PutClaimPolicy(ContextService contextService,
-        List<RewardBaseModel> rewards, bool free, TimeSpan interval, bool activate, int minimumLevel, string password, int? maxLevel = null)
+        List<RewardBaseModel> rewards, bool free, TimeSpan interval, bool activate, int minimumLevel, string password,
+        DateTime startedAt, DateTime endedAt, int? maxLevel = null)
     {
-        return await contextService.PutClaimPolicy(rewards, free, interval, activate, minimumLevel, password, maxLevel);
+        return await contextService.PutClaimPolicy(rewards, free, interval, activate, minimumLevel, password, startedAt, endedAt, maxLevel);
     }
 
     public static async Task<string> Claim(

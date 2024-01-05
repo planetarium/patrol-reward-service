@@ -18,6 +18,7 @@ public class MutationTypeTest
     private readonly ServiceProvider _provider;
     private readonly RequestExecutorProxy _executor;
     private readonly IDbContextFactory<RewardDbContext> _contextFactory;
+    private readonly ContextService _contextService;
 
     public MutationTypeTest()
     {
@@ -51,12 +52,11 @@ public class MutationTypeTest
         var resolver = _provider.GetRequiredService<IRequestExecutorResolver>();
         _executor = new RequestExecutorProxy(resolver, Schema.DefaultName);
         _contextFactory = _provider.GetRequiredService<IDbContextFactory<RewardDbContext>>();
+        _contextService = _provider.GetRequiredService<ContextService>();
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task PutRewardPolicy(bool exist)
+    [Fact]
+    public async Task PutRewardPolicy_Insert()
     {
         var context = await _contextFactory.CreateDbContextAsync();
         await context.Database.EnsureDeletedAsync();
@@ -66,9 +66,9 @@ public class MutationTypeTest
     activate: true
     free: true
     interval: ""PT6H""
-        minimumLevel: 50
-        password: ""password""
-        rewards: [
+    minimumLevel: 50
+    password: ""password""
+    rewards: [
         { currency: ""CRYSTAL"", perInterval: 50, rewardInterval: ""PT6H"" }
         {
             itemId: 40000
@@ -82,7 +82,93 @@ public class MutationTypeTest
             perInterval: 1
             rewardInterval: ""PT6H""
         }
-        ]
+    ],
+    startedAt: ""2024-01-01"",
+    endedAt: ""2024-01-04"",
+        )
+    }
+    ";
+        var request = QueryRequestBuilder.New()
+        .SetQuery(query)
+        .SetServices(_provider)
+        .Create();
+        await _executor.ExecuteAsync(request);
+
+        var startedAt = DateTime.UtcNow.Date;
+        var endedAt = startedAt + TimeSpan.FromDays(1);
+        query = @$"mutation {{
+  putRewardPolicy(
+    activate: true
+    free: true
+    interval: ""PT6H""
+    minimumLevel: 50
+    password: ""password""
+    rewards: [
+        {{ currency: ""CRYSTAL"", perInterval: 50, rewardInterval: ""PT6H"" }}
+        {{
+            itemId: 40000
+            fungibleId: ""1"",
+            perInterval: 50
+            rewardInterval: ""PT6H""
+        }}
+        {{
+            itemId: 50000
+            fungibleId: ""2"",
+            perInterval: 1
+            rewardInterval: ""PT6H""
+        }}
+    ],
+    startedAt: ""{startedAt}"",
+    endedAt: ""{endedAt}""
+        )
+    }}
+    ";
+        request = QueryRequestBuilder.New()
+            .SetQuery(query)
+            .SetServices(_provider)
+            .Create();
+        await _executor.ExecuteAsync(request);
+        IExecutionResult result = await _executor.ExecuteAsync(request);
+        var data = ExecuteRequestAsStreamAsync(result);
+        data.MatchSnapshot();
+        Assert.Equal(2, context.RewardPolicies.Count());
+        var policy = _contextService.GetPolicy(true, 50);
+        Assert.Equal(2, policy.Id);
+        Assert.Equal(startedAt, policy.StartedAt.ToLocalTime());
+        Assert.Equal(endedAt, policy.EndedAt.ToLocalTime());
+        Assert.Equal(3, context.Rewards.Count());
+        await context.Database.EnsureDeletedAsync();
+    }
+
+    [Fact]
+    public async Task PutRewardPolicy_Update()
+    {
+        var context = await _contextFactory.CreateDbContextAsync();
+        await context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureCreatedAsync();
+        var query = @"mutation {
+  putRewardPolicy(
+    activate: true
+    free: true
+    interval: ""PT6H""
+    minimumLevel: 50
+    password: ""password""
+    rewards: [
+        { currency: ""CRYSTAL"", perInterval: 50, rewardInterval: ""PT6H"" }
+        {
+            itemId: 40000
+            fungibleId: ""1"",
+            perInterval: 50
+            rewardInterval: ""PT6H""
+        }
+        {
+            itemId: 50000
+            fungibleId: ""2"",
+            perInterval: 1
+            rewardInterval: ""PT6H""
+        }
+    ],
+    startedAt: ""2024-01-05"",
         )
     }
     ";
@@ -90,15 +176,13 @@ public class MutationTypeTest
             .SetQuery(query)
             .SetServices(_provider)
             .Create();
-        if (exist)
-        {
-            await _executor.ExecuteAsync(request);
-        }
+        await _executor.ExecuteAsync(request);
 
         IExecutionResult result = await _executor.ExecuteAsync(request);
         var data = ExecuteRequestAsStreamAsync(result);
-        data.MatchSnapshot(SnapshotNameExtension.Create(exist));
-        Assert.Single(context.RewardPolicies);
+        data.MatchSnapshot();
+        var policy = Assert.Single(context.RewardPolicies);
+        Assert.Equal(DateTime.Parse("2024-01-05"), policy.StartedAt.ToLocalTime());
         Assert.Equal(3, context.Rewards.Count());
         await context.Database.EnsureDeletedAsync();
     }
@@ -114,9 +198,9 @@ public class MutationTypeTest
     activate: true
     free: true
     interval: ""PT6H""
-        minimumLevel: 50
-        password: ""invalid""
-        rewards: [
+    minimumLevel: 50
+    password: ""invalid""
+    rewards: [
         { currency: ""CRYSTAL"", perInterval: 50, rewardInterval: ""PT6H"" }
         {
             itemId: 40000
@@ -130,7 +214,8 @@ public class MutationTypeTest
             perInterval: 1
             rewardInterval: ""PT6H""
         }
-        ]
+    ],
+    startedAt: ""2024-01-05"",
         )
     }
     ";
