@@ -4,6 +4,10 @@ namespace PatrolRewardService.GraphqlTypes;
 
 public class QueryType : ObjectType<Query>
 {
+    /// <summary>
+    /// Configures the ObjectTypeDescriptor for the Query object.
+    /// </summary>
+    /// <param name="descriptor">The ObjectTypeDescriptor to configure.</param>
     protected override void Configure(IObjectTypeDescriptor<Query> descriptor)
     {
         descriptor.Field(f => f.GetAvatar(default!, default!, default!, default!))
@@ -34,11 +38,12 @@ public class QueryType : ObjectType<Query>
                 return Query.Transactions(contextService);
             })
             .UseFiltering();
-        descriptor.Field("invalidTxCount")
+        descriptor.Field("pendingTxCount")
+            .Description("Retrieves the count of pending transactions")
             .Resolve(context =>
             {
                 var contextService = context.Service<ContextService>();
-                return Query.InvalidTxCount(contextService);
+                return Query.PendingTxCount(contextService);
             })
             .Type<IntType>();
     }

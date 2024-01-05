@@ -277,13 +277,14 @@ public class QueryTypeTest
     }
 
     [Fact]
-    public async Task InvalidTxCount()
+    public async Task PendingTxCount()
     {
         var context = await _contextFactory.CreateDbContextAsync();
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
         
         var txId = "b7925dbf5a532dd18bba7408177b752ccf6ca2e17034fa18f3e4b8562644fb09";
+        var pendingTxId = "b7925dbf5a532dd18bba7408177b752ccf6ca2e17034fa18f3e4b8562644fb10";
         var avatarAddress = new Address("0xaDBa1CF2115c28E1DA761C65a06bADe620D66839");
         var agentAddress = new Address("0x17724085F1d1b5E7a1b7B8857fb7FF14416867C1");
         var avatar = new AvatarModel
@@ -310,10 +311,22 @@ public class QueryTypeTest
             Gas = 1,
             Result = TransactionStatus.INVALID,
         };
-        await context.Transactions.AddAsync(transaction);
+        var pendingTransaction = new TransactionModel
+        {
+            TxId = TxId.FromHex(pendingTxId),
+            Payload = "payload",
+            ClaimCount = 1,
+            Claim = claim,
+            Avatar = avatar,
+            Nonce = 1,
+            GasLimit = 4,
+            Gas = 1,
+            Result = TransactionStatus.STAGING,
+        };
+        await context.Transactions.AddRangeAsync(new[] {transaction, pendingTransaction});
         await context.SaveChangesAsync();
 
-        var query = "query { invalidTxCount() }";
+        var query = "query { pendingTxCount() }";
 
         var request = QueryRequestBuilder.New()
             .SetQuery(query)

@@ -1,6 +1,4 @@
-using Libplanet.Crypto;
 using Libplanet.Types.Tx;
-using Microsoft.EntityFrameworkCore;
 using PatrolRewardService.GraphqlTypes;
 using PatrolRewardService.Models;
 
@@ -34,8 +32,13 @@ public class Query
         return contextService.Transactions();
     }
 
-    public static async Task<int> InvalidTxCount(ContextService contextService)
+    /// <summary>
+    /// Retrieves the count of pending transactions from a given context service.
+    /// </summary>
+    /// <param name="contextService">The context service to retrieve the pending transactions count from.</param>
+    /// <returns>The count of pending transactions as an asynchronous operation.</returns>
+    public static async Task<int> PendingTxCount(ContextService contextService)
     {
-        return await contextService.InvalidTxCount();
+        return await contextService.PendingTxCount();
     }
 }
