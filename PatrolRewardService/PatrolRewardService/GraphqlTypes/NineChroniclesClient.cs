@@ -122,10 +122,11 @@ query($txId: TxId!) {
         {
             txId = txId.ToHex()
         };
-        var request = new GraphQLRequest
+        var request = new GraphQLHttpRequestWithAuth
         {
             Query = query,
-            Variables = variables
+            Variables = variables,
+            Authentication = new AuthenticationHeaderValue("Bearer",Token()),
         };
 
         GraphQLResponse<TransactionResultResponse> resp;
@@ -154,9 +155,10 @@ query($txId: TxId!) {
     }
   }
 }";
-        var request = new GraphQLRequest
+        var request = new GraphQLHttpRequestWithAuth
         {
             Query = query,
+            Authentication = new AuthenticationHeaderValue("Bearer",Token()),
         };
 
         GraphQLResponse<NodeStatusResponse> resp;
