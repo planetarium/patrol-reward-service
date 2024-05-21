@@ -25,6 +25,7 @@
         <PackageReference Include="Sentry.AspNetCore" Version="3.40.1" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
         <PackageReference Include="Lib9c" Version="1.1.0-dev.9225af05d16d566ee69b879fab14ba816c3ffb7b" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.5.1" />
     </ItemGroup>
 
     <ItemGroup>

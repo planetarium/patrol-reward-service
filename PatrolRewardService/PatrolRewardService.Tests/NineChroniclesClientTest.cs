@@ -1,3 +1,6 @@
+using System.Net.Http.Headers;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.Newtonsoft;
 using Libplanet.Crypto;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,7 +15,7 @@ public class NineChroniclesClientTest
 
     public NineChroniclesClientTest()
     {
-        var configOptions = new GraphqlClientOptions {Host = "http://9c-internal-validator-5.nine-chronicles.com", Port = 80};
+        var configOptions = new GraphqlClientOptions {Host = "http://9c-internal-validator-5.nine-chronicles.com", Port = 80, JwtIssuer = "issuer", JwtSecret = "onsolhjcqbrawkvznmhuukoqunyzyigmwfixgqwvnlqlbpvqfvhfcyslwmqerpyihowcyiksouulydbuuuvlgpfskhzrcrsjorqkwnfxkkosvkkdwcxhjitwyxbfezig"};
         _client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(configOptions), new LoggerFactory());
     }
 
@@ -32,5 +35,18 @@ public class NineChroniclesClientTest
     {
         var tip = await _client.Tip();
         Assert.True(tip > 0);
+    }
+
+    [Fact]
+    public void RequestHeader()
+    {
+        var request = new NineChroniclesClient.GraphQLHttpRequestWithAuth
+        {
+            Query = "",
+            Authentication = new AuthenticationHeaderValue("Bearer","test"),
+        };
+        var msg = request.ToHttpRequestMessage(new GraphQLHttpClientOptions(), new NewtonsoftJsonSerializer());
+        Assert.NotNull(msg.Headers.Authorization);
+        Assert.Equal(request.Authentication, msg.Headers.Authorization);
     }
 }

@@ -1,10 +1,15 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Headers;
+using System.Text;
 using GraphQL;
+using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Libplanet.Common;
 using Libplanet.Crypto;
 using Libplanet.Types.Tx;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using PatrolRewardService.Models;
 
 namespace PatrolRewardService.GraphqlTypes;
@@ -13,6 +18,8 @@ public class NineChroniclesClient
 {
     private readonly GraphQLHttpClient _client;
     private readonly ILogger<NineChroniclesClient> _logger;
+    private readonly SigningCredentials _cred;
+    private readonly string _issuer;
 
     public NineChroniclesClient(IOptions<GraphqlClientOptions> options, ILoggerFactory loggerFactory)
     {
@@ -23,6 +30,9 @@ public class NineChroniclesClient
         };
         _client = new GraphQLHttpClient(clientOptions, new NewtonsoftJsonSerializer());
         _logger = loggerFactory.CreateLogger<NineChroniclesClient>();
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(graphqlClientOptions.JwtSecret));
+        _cred = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        _issuer = graphqlClientOptions.JwtIssuer;
     }
 
     public async Task<Avatar> GetAvatar(string avatarAddress)
@@ -37,13 +47,14 @@ query($avatarAddress: Address!) {
         }
     }
 }";
-        var request = new GraphQLRequest
+        var request = new GraphQLHttpRequestWithAuth
         {
             Query = query,
             Variables = new
             {
                 avatarAddress
-            }
+            },
+            Authentication = new AuthenticationHeaderValue("Bearer",Token())
         };
 
         GraphQLResponse<GetAvatarResult> resp;
@@ -70,10 +81,11 @@ query($avatarAddress: Address!) {
         {
             payload = ByteUtil.Hex(tx.Serialize())
         };
-        var request = new GraphQLRequest
+        var request = new GraphQLHttpRequestWithAuth
         {
             Query = query,
-            Variables = variables
+            Variables = variables,
+            Authentication = new AuthenticationHeaderValue("Bearer",Token()),
         };
 
         GraphQLResponse<StageTransactionResult> resp;
@@ -110,10 +122,11 @@ query($txId: TxId!) {
         {
             txId = txId.ToHex()
         };
-        var request = new GraphQLRequest
+        var request = new GraphQLHttpRequestWithAuth
         {
             Query = query,
-            Variables = variables
+            Variables = variables,
+            Authentication = new AuthenticationHeaderValue("Bearer",Token()),
         };
 
         GraphQLResponse<TransactionResultResponse> resp;
@@ -142,9 +155,10 @@ query($txId: TxId!) {
     }
   }
 }";
-        var request = new GraphQLRequest
+        var request = new GraphQLHttpRequestWithAuth
         {
             Query = query,
+            Authentication = new AuthenticationHeaderValue("Bearer",Token()),
         };
 
         GraphQLResponse<NodeStatusResponse> resp;
@@ -225,5 +239,26 @@ query($txId: TxId!) {
     public class TipResult
     {
         public int Index;
+    }
+
+    public class GraphQLHttpRequestWithAuth : GraphQLHttpRequest {
+        public AuthenticationHeaderValue? Authentication { get; set; }
+
+        public override HttpRequestMessage ToHttpRequestMessage(GraphQLHttpClientOptions options, IGraphQLJsonSerializer serializer) {
+            var r = base.ToHttpRequestMessage(options, serializer);
+            r.Headers.Authorization = Authentication;
+            return r;
+        }
+    }
+
+    private string Token()
+    {
+        var token = new JwtSecurityToken(
+            issuer: _issuer,
+            expires: DateTime.UtcNow.AddMinutes(5),
+            signingCredentials: _cred
+        );
+        var jwt = new JwtSecurityTokenHandler().WriteToken(token);
+        return jwt;
     }
 }
