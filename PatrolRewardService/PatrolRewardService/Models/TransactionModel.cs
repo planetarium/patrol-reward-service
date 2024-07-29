@@ -37,5 +37,6 @@ public enum TransactionStatus
     INVALID,
     STAGING,
     SUCCESS,
-    FAILURE
+    FAILURE,
+    INCLUDED,
 }
