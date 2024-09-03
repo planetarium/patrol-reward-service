@@ -45,11 +45,17 @@ public class TransactionStageWorker : BackgroundService
         }
     }
 
+    /// <summary>
+    /// Staging <see cref="TransactionStatus.CREATED"/> or <see cref="TransactionStatus.INVALID"/> transactions.
+    /// </summary>
+    /// <param name="dbContext"></param>
+    /// <param name="client"></param>
+    /// <param name="stoppingToken"></param>
     public static async Task StageTx(RewardDbContext dbContext, NineChroniclesClient client,
         CancellationToken stoppingToken)
     {
         var transactions = dbContext.Transactions
-            .Where(p => p.Result == TransactionStatus.CREATED).ToList();
+            .Where(p => p.Result == TransactionStatus.CREATED || p.Result == TransactionStatus.INVALID).ToList();
         foreach (var transaction in transactions)
         {
             var tx = Transaction.Deserialize(Convert.FromBase64String(transaction.Payload));
