@@ -1,4 +1,3 @@
-using Libplanet.Types.Tx;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using PatrolRewardService.GraphqlTypes;
@@ -45,6 +44,12 @@ public class TransactionWorker : BackgroundService
         }
     }
 
+    /// <summary>
+    /// Update staged transactions result
+    /// </summary>
+    /// <param name="dbContext"></param>
+    /// <param name="client"></param>
+    /// <param name="stoppingToken"></param>
     public static async Task UpdateTx(RewardDbContext dbContext, NineChroniclesClient client,
         CancellationToken stoppingToken)
     {
@@ -53,9 +58,13 @@ public class TransactionWorker : BackgroundService
             .OrderBy(p => p.Nonce)
             .Take(100)
             .ToList();
-        foreach (var tx in transactions)
+        var txIds = transactions.Select(t => t.TxId.ToHex()).ToList();
+        var results = await client.Results(txIds);
+        var count = transactions.Count;
+        for (int i = 0; i < count; i++)
         {
-            var result = await client.Result(tx.TxId);
+            var result = results[i];
+            var tx = transactions[i];
             tx.Result = result.txStatus;
             tx.ExceptionName = result.exceptionNames?.FirstOrDefault();
         }
