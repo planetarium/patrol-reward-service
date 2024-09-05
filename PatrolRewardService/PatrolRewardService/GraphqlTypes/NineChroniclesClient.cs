@@ -105,6 +105,12 @@ query($avatarAddress: Address!) {
         throw new GraphQLException(msg);
     }
 
+    /// <summary>
+    /// query transaction result by given <see cref="TxId"/>
+    /// </summary>
+    /// <param name="txId"><see cref="TxId"/></param>
+    /// <returns><see cref="TransactionResult"/></returns>
+    /// <exception cref="GraphQLException"></exception>
     public async Task<TransactionResult> Result(TxId txId)
     {
         var query = @"
@@ -141,6 +147,54 @@ query($txId: TxId!) {
         }
 
         if (resp.Errors is null) return resp.Data.Transaction.TransactionResult;
+
+        var msg = resp.Errors.Aggregate("", (current, error) => current + error.Message + "\n");
+        throw new GraphQLException(msg);
+    }
+
+
+    /// <summary>
+    /// query transaction result by given transaction ids. the order of results is the same as the order of txIds.
+    /// </summary>
+    /// <param name="txIds">list of hex encoded tx ids</param>
+    /// <returns><see cref="IReadOnlyList{TransactionResult}"/></returns>
+    /// <exception cref="GraphQLException"></exception>
+    public async Task<IReadOnlyList<TransactionResult>> Results(List<string> txIds)
+    {
+        var query = @"
+query($txIds: [TxId]!) {
+  transaction {
+    transactionResults(txIds: $txIds) {
+      txStatus
+      exceptionNames
+      blockIndex
+    }
+  }
+}
+";
+        var variables = new
+        {
+            txIds,
+        };
+        var request = new GraphQLHttpRequestWithAuth
+        {
+            Query = query,
+            Variables = variables,
+            Authentication = new AuthenticationHeaderValue("Bearer",Token()),
+        };
+
+        GraphQLResponse<TransactionResultsResponse> resp;
+        try
+        {
+            resp = await _client.SendQueryAsync<TransactionResultsResponse>(request);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("{Msg}", e.Message);
+            throw;
+        }
+
+        if (resp.Errors is null) return resp.Data.Transaction.TransactionResults;
 
         var msg = resp.Errors.Aggregate("", (current, error) => current + error.Message + "\n");
         throw new GraphQLException(msg);
@@ -218,6 +272,16 @@ query($txId: TxId!) {
     public class TransactionResultQuery
     {
         public TransactionResult TransactionResult;
+    }
+
+    public class TransactionResultsResponse
+    {
+        public TransactionResultsQuery Transaction;
+    }
+
+    public class TransactionResultsQuery
+    {
+        public IReadOnlyList<TransactionResult> TransactionResults;
     }
 
     public class TransactionResult
