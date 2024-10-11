@@ -54,7 +54,7 @@ public class TransactionWorker : BackgroundService
         CancellationToken stoppingToken)
     {
         var transactions = dbContext.Transactions
-            .Where(p => p.Result == TransactionStatus.STAGING || p.Result == TransactionStatus.INVALID)
+            .Where(p => p.Result == TransactionStatus.STAGING || p.Result == TransactionStatus.INVALID || p.Result == TransactionStatus.INCLUDED)
             .OrderBy(p => p.Nonce)
             .Take(100)
             .ToList();
