@@ -7,4 +7,6 @@ public class WorkerOptions
     public int StageInterval { get; set; }
 
     public int ResultInterval { get; set; }
+
+    public int StageTxCapacity { get; set; } = 100;
 }
