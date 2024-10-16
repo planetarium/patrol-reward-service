@@ -15,15 +15,15 @@ public class NineChroniclesClientTest
 
     public NineChroniclesClientTest()
     {
-        var configOptions = new GraphqlClientOptions {Host = "http://9c-internal-validator-5.nine-chronicles.com", Port = 80, JwtIssuer = "issuer", JwtSecret = "onsolhjcqbrawkvznmhuukoqunyzyigmwfixgqwvnlqlbpvqfvhfcyslwmqerpyihowcyiksouulydbuuuvlgpfskhzrcrsjorqkwnfxkkosvkkdwcxhjitwyxbfezig"};
+        var configOptions = new GraphqlClientOptions {Host = "http://heimdall-internal-validator-1.nine-chronicles.com", Port = 80, JwtIssuer = "issuer", JwtSecret = "onsolhjcqbrawkvznmhuukoqunyzyigmwfixgqwvnlqlbpvqfvhfcyslwmqerpyihowcyiksouulydbuuuvlgpfskhzrcrsjorqkwnfxkkosvkkdwcxhjitwyxbfezig"};
         _client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(configOptions), new LoggerFactory());
     }
 
     [Fact]
     public async Task GetAvatar()
     {
-        var avatarAddress = new Address("0xC86D734Bd2D5857CD25887dB7dBBE252F12087c6");
-        var agentAddress = new Address("0x8fF5e1c64860aF7d88b019837a378fBbec75c7D9");
+        var avatarAddress = new Address("0xB9AF8B04890ACD9d69DA584080DB24814eB729B2");
+        var agentAddress = new Address("0x60cF1A940f30569d84E591499FddD83B5E37DfBC");
         NineChroniclesClient.Avatar? avatar = await _client.GetAvatar(avatarAddress.ToString());
         Assert.Equal(avatarAddress, avatar.Address);
         Assert.Equal(agentAddress, avatar.AgentAddress);

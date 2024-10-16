@@ -12,6 +12,7 @@ public class TransactionStageWorker : BackgroundService
     private readonly NineChroniclesClient _nineChroniclesClient;
     private readonly int _interval;
     private readonly ILogger<TransactionStageWorker> _logger;
+    private readonly int _stageTxCapacity;
 
     public TransactionStageWorker(NineChroniclesClient client, IDbContextFactory<RewardDbContext> contextFactory, IOptions<WorkerOptions> options, ILoggerFactory loggerFactory)
     {
@@ -19,6 +20,7 @@ public class TransactionStageWorker : BackgroundService
         _contextFactory = contextFactory;
         _interval = options.Value.StageInterval;
         _logger = loggerFactory.CreateLogger<TransactionStageWorker>();
+        _stageTxCapacity = options.Value.StageTxCapacity;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -30,7 +32,11 @@ public class TransactionStageWorker : BackgroundService
             try
             {
                 var dbContext = await _contextFactory.CreateDbContextAsync(stoppingToken);
-                await StageTx(dbContext, _nineChroniclesClient, stoppingToken);
+                var stagedTxCount = dbContext.Transactions.Count(t => t.Result == TransactionStatus.STAGING);
+                if (stagedTxCount < _stageTxCapacity)
+                {
+                    await StageTx(dbContext, _nineChroniclesClient, stoppingToken);
+                }
                 await Task.Delay(_interval, stoppingToken);
             }
             catch (InvalidOperationException)

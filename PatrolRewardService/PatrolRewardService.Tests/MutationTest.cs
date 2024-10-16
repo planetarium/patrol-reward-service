@@ -38,7 +38,7 @@ public class MutationTest
         await context.Database.EnsureCreatedAsync();
         var serializedAvatarAddress = avatarAddress.ToString();
         var serializedAgentAddress = agentAddress.ToString();
-        var configOptions = new GraphqlClientOptions {Host = "http://9c-internal-validator-5.nine-chronicles.com", Port = 80, JwtIssuer = "issuer", JwtSecret = "onsolhjcqbrawkvznmhuukoqunyzyigmwfixgqwvnlqlbpvqfvhfcyslwmqerpyihowcyiksouulydbuuuvlgpfskhzrcrsjorqkwnfxkkosvkkdwcxhjitwyxbfezig"};
+        var configOptions = new GraphqlClientOptions {Host = "http://heimdall-internal-validator-1.nine-chronicles.com", Port = 80, JwtIssuer = "issuer", JwtSecret = "onsolhjcqbrawkvznmhuukoqunyzyigmwfixgqwvnlqlbpvqfvhfcyslwmqerpyihowcyiksouulydbuuuvlgpfskhzrcrsjorqkwnfxkkosvkkdwcxhjitwyxbfezig"};
         var client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(configOptions), new LoggerFactory());
         await Assert.ThrowsAsync<GraphQLException>(() => Mutation.PutAvatar(contextService, client, serializedAvatarAddress, serializedAgentAddress));
         Assert.Empty(context.Avatars);
@@ -50,8 +50,8 @@ public class MutationTest
     [InlineData(false)]
     public async Task PutPlayer(bool exist)
     {
-        var avatarAddress = new Address("0xc86d734bd2d5857cd25887db7dbbe252f12087c6");
-        var agentAddress = new Address("0x8ff5e1c64860af7d88b019837a378fbbec75c7d9");
+        var avatarAddress = new Address("0xB9AF8B04890ACD9d69DA584080DB24814eB729B2");
+        var agentAddress = new Address("0x60cF1A940f30569d84E591499FddD83B5E37DfBC");
         var player = new AvatarModel
         {
             AvatarAddress = avatarAddress,
@@ -76,7 +76,7 @@ public class MutationTest
         }
         var serializedAvatarAddress = avatarAddress.ToString();
         var serializedAgentAddress = agentAddress.ToString();
-        var configOptions = new GraphqlClientOptions {Host = "http://9c-internal-validator-5.nine-chronicles.com", Port = 80, JwtIssuer = "issuer", JwtSecret = "onsolhjcqbrawkvznmhuukoqunyzyigmwfixgqwvnlqlbpvqfvhfcyslwmqerpyihowcyiksouulydbuuuvlgpfskhzrcrsjorqkwnfxkkosvkkdwcxhjitwyxbfezig"};
+        var configOptions = new GraphqlClientOptions {Host = "http://heimdall-internal-validator-1.nine-chronicles.com", Port = 80, JwtIssuer = "issuer", JwtSecret = "onsolhjcqbrawkvznmhuukoqunyzyigmwfixgqwvnlqlbpvqfvhfcyslwmqerpyihowcyiksouulydbuuuvlgpfskhzrcrsjorqkwnfxkkosvkkdwcxhjitwyxbfezig"};
         var client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(configOptions), new LoggerFactory());
         await contextService.PutClaimPolicy(new List<RewardBaseModel>(), true, TimeSpan.FromHours(12), true, 1,
             "password", DateTime.UtcNow, DateTime.MaxValue);
@@ -133,7 +133,7 @@ public class MutationTest
         await context.RewardPolicies.AddAsync(policy);
         await context.Avatars.AddAsync(avatar);
         // await context.SaveChangesAsync();
-        var configOptions = new GraphqlClientOptions {Host = "http://9c-internal-validator-5.nine-chronicles.com", Port = 80, JwtIssuer = "issuer", JwtSecret = "onsolhjcqbrawkvznmhuukoqunyzyigmwfixgqwvnlqlbpvqfvhfcyslwmqerpyihowcyiksouulydbuuuvlgpfskhzrcrsjorqkwnfxkkosvkkdwcxhjitwyxbfezig"};
+        var configOptions = new GraphqlClientOptions {Host = "http://heimdall-internal-validator-1.nine-chronicles.com", Port = 80, JwtIssuer = "issuer", JwtSecret = "onsolhjcqbrawkvznmhuukoqunyzyigmwfixgqwvnlqlbpvqfvhfcyslwmqerpyihowcyiksouulydbuuuvlgpfskhzrcrsjorqkwnfxkkosvkkdwcxhjitwyxbfezig"};
         var client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(configOptions), new LoggerFactory());
         var privateKey = new PrivateKey();
         var signerOptions = new SignerOptions
