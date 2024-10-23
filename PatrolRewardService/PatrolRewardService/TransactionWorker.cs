@@ -59,17 +59,20 @@ public class TransactionWorker : BackgroundService
             .Take(100)
             .ToList();
         var txIds = transactions.Select(t => t.TxId.ToHex()).ToList();
-        var results = await client.Results(txIds);
-        var count = transactions.Count;
-        for (int i = 0; i < count; i++)
+        if (txIds.Any())
         {
-            var result = results[i];
-            var tx = transactions[i];
-            tx.Result = result.txStatus;
-            tx.ExceptionName = result.exceptionNames?.FirstOrDefault();
-        }
+            var results = await client.Results(txIds);
+            var count = transactions.Count;
+            for (int i = 0; i < count; i++)
+            {
+                var result = results[i];
+                var tx = transactions[i];
+                tx.Result = result.txStatus;
+                tx.ExceptionName = result.exceptionNames?.FirstOrDefault();
+            }
 
-        dbContext.UpdateRange(transactions);
-        await dbContext.SaveChangesAsync(stoppingToken);
+            dbContext.UpdateRange(transactions);
+            await dbContext.SaveChangesAsync(stoppingToken);
+        }
     }
 }
