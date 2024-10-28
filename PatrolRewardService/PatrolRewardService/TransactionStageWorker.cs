@@ -61,7 +61,9 @@ public class TransactionStageWorker : BackgroundService
         CancellationToken stoppingToken)
     {
         var transactions = dbContext.Transactions
-            .Where(p => p.Result == TransactionStatus.CREATED || p.Result == TransactionStatus.INVALID);
+            .Where(p => p.Result == TransactionStatus.CREATED || p.Result == TransactionStatus.INVALID)
+            .OrderBy(p => p.Nonce)
+            .Take(100);
         foreach (var transaction in transactions)
         {
             var tx = Transaction.Deserialize(Convert.FromBase64String(transaction.Payload));
