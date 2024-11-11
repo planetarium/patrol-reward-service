@@ -232,6 +232,39 @@ query($txIds: [TxId]!) {
         throw new GraphQLException(msg);
     }
 
+    /// <summary>
+    /// Get patrol reward address next nonce from node
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="GraphQLException"></exception>
+    public async Task<long> Nonce()
+    {
+        var query = @"query {
+  nextTxNonce(address: ""0xCaD60f18b4Ba189f7f1c14E2267D9b20F5b16Ff5"")
+}";
+        var request = new GraphQLHttpRequestWithAuth
+        {
+            Query = query,
+            Authentication = new AuthenticationHeaderValue("Bearer",Token()),
+        };
+
+        GraphQLResponse<NonceResponse> resp;
+        try
+        {
+            resp = await _client.SendQueryAsync<NonceResponse>(request);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("{Msg}", e.Message);
+            throw;
+        }
+
+        if (resp.Errors is null) return resp.Data.NextTxNonce;
+
+        var msg = resp.Errors.Aggregate("", (current, error) => current + error.Message + "\n");
+        throw new GraphQLException(msg);
+    }
+
     public class GetAvatarResult
     {
         public StateQuery StateQuery;
@@ -303,6 +336,11 @@ query($txIds: [TxId]!) {
     public class TipResult
     {
         public int Index;
+    }
+
+    public class NonceResponse
+    {
+        public long NextTxNonce;
     }
 
     public class GraphQLHttpRequestWithAuth : GraphQLHttpRequest {

@@ -49,4 +49,11 @@ public class NineChroniclesClientTest
         Assert.NotNull(msg.Headers.Authorization);
         Assert.Equal(request.Authentication, msg.Headers.Authorization);
     }
+
+    [Fact]
+    public async Task Nonce()
+    {
+        var nonce = await _client.Nonce();
+        Assert.True(nonce > 0L);
+    }
 }
