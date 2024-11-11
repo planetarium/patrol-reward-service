@@ -15,7 +15,9 @@ public class NineChroniclesClientTest
 
     public NineChroniclesClientTest()
     {
-        var configOptions = new GraphqlClientOptions {Host = "http://heimdall-validator-1.nine-chronicles.com", Port = 80, JwtIssuer = "issuer", JwtSecret = "onsolhjcqbrawkvznmhuukoqunyzyigmwfixgqwvnlqlbpvqfvhfcyslwmqerpyihowcyiksouulydbuuuvlgpfskhzrcrsjorqkwnfxkkosvkkdwcxhjitwyxbfezig"};
+        var graphqlHost = Environment.GetEnvironmentVariable("TEST_GRAPHQL_HOST")!;
+        var jwtSecret = Environment.GetEnvironmentVariable("TEST_JWT_SECRET")!;
+        var configOptions = new GraphqlClientOptions {Host = graphqlHost, Port = 80, JwtIssuer = "issuer", JwtSecret = jwtSecret};
         _client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(configOptions), new LoggerFactory());
     }
 
