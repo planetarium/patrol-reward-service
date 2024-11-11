@@ -142,7 +142,7 @@ public class MutationTest
             GenesisHash = "4582250d0da33b06779a8475d283d5dd210c683b9b999d74d03fac4f58fa6bce"
         };
         var signer = new Signer(new OptionsWrapper<SignerOptions>(signerOptions));
-        var txId = await Mutation.ClaimTx(contextService, signer, avatarAddress.ToString(), avatar, policy, new NineChroniclesClient.Avatar());
+        var txId = await Mutation.ClaimTx(contextService, signer, avatarAddress.ToString(), avatar, policy, new NineChroniclesClient.Avatar(), client);
         Assert.Equal(1, avatar.ClaimCount);
         Assert.Equal(1, context.Transactions.Count(t => t.ClaimCount == 0));
         await Mutation.RetryTransaction(contextService, signer, client, txId, "password");

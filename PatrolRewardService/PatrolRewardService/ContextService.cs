@@ -158,19 +158,21 @@ public class ContextService : IAsyncDisposable, IDisposable
             .FirstOrDefaultAsync(t => t.TxId == txId);
     }
 
-    public async Task<long> GetNonce()
+    /// <summary>
+    /// Get next transaction nonce. if transactions table is empty, get nonce from blockchain node.
+    /// </summary>
+    /// <param name="nineChroniclesClient"></param>
+    /// <returns></returns>
+    public async Task<long> GetNonce(NineChroniclesClient nineChroniclesClient)
     {
-        long nonce = 0L;
         try
         {
-            nonce = await _dbContext.Transactions.Select(p => p.Nonce).MaxAsync() + 1;
+            return await _dbContext.Transactions.Select(p => p.Nonce).MaxAsync() + 1;
         }
         catch (InvalidOperationException)
         {
-            //pass
+            return await nineChroniclesClient.Nonce();
         }
-
-        return nonce;
     }
 
     public async Task InsertTransaction(TransactionModel transaction)
@@ -195,7 +197,7 @@ public class ContextService : IAsyncDisposable, IDisposable
             var policy = GetPolicy(true, avatarState.Level);
             avatar.LastClaimedAt = avatar.CreatedAt - policy.MinimumRequiredInterval;
         }
-    
+
         avatar.Level = avatarState.Level;
         if (save)
         {
@@ -205,7 +207,7 @@ public class ContextService : IAsyncDisposable, IDisposable
                 _dbContext.Avatars.Add(avatar);
             await _dbContext.SaveChangesAsync();
         }
-    
+
         return avatar;
     }
 
@@ -233,12 +235,12 @@ public class ContextService : IAsyncDisposable, IDisposable
             return null;
         }
 
-        return await RetryTx(signer, transaction);
+        return await RetryTx(signer, transaction, client);
     }
 
-    private async Task<TxId> RetryTx(Signer signer, TransactionModel transaction)
+    private async Task<TxId> RetryTx(Signer signer, TransactionModel transaction, NineChroniclesClient nineChroniclesClient)
     {
-        var newNonce = await GetNonce();
+        var newNonce = await GetNonce(nineChroniclesClient);
         var avatar = transaction.Avatar;
         var memo = $"retry patrol reward {avatar.AvatarAddress} / {avatar.ClaimCount}";
         var action = transaction.Claim.ToClaimItems(avatar.AvatarAddress, avatar.AgentAddress, memo);
@@ -288,7 +290,7 @@ public class ContextService : IAsyncDisposable, IDisposable
 
         foreach (var transaction in transactions)
         {
-            TxId txId = await RetryTx(signer, transaction);
+            TxId txId = await RetryTx(signer, transaction, client);
             result.Add(txId);
         }
 
@@ -348,7 +350,7 @@ public class ContextService : IAsyncDisposable, IDisposable
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-    
+
     protected virtual void Dispose(bool disposing)
     {
         if (!_disposed)
@@ -360,7 +362,7 @@ public class ContextService : IAsyncDisposable, IDisposable
 
             _disposed = true;
         }
-    }    
+    }
     protected virtual async ValueTask DisposeAsyncCore()
     {
         await _dbContext.DisposeAsync();
@@ -386,7 +388,6 @@ public class ContextService : IAsyncDisposable, IDisposable
         foreach (var transaction in transactions)
         {
             var tx = Transaction.Deserialize(Convert.FromBase64String(transaction.Payload));
-            var txId = tx.Id;
             await client.StageTx(tx);
             result.Add(tx.Id);
         }
