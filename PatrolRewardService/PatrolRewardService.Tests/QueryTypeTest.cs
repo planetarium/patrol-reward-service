@@ -36,7 +36,7 @@ public class QueryTypeTest
         var myConfiguration = new Dictionary<string, string>
         {
             {"ConnectionStrings:PatrolReward", connectionString},
-            {"GraphqlClientConfig:Host", "http://heimdall-internal-validator-1.nine-chronicles.com"},
+            {"GraphqlClientConfig:Host", "http://heimdall-validator-1.nine-chronicles.com"},
             {"GraphqlClientConfig:Port", "80"},
             {"SignerConfig:PrivateKey", ByteUtil.Hex(privateKey.ByteArray)},
             {"SignerConfig:GenesisHash", ByteUtil.Hex(blockHash.ByteArray)},

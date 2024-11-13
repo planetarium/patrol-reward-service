@@ -12,12 +12,16 @@ namespace PatrolRewardService.Tests;
 public class MutationTest
 {
     private readonly string _conn;
+    private readonly GraphqlClientOptions _configOptions;
 
     public MutationTest()
     {
         var host = Environment.GetEnvironmentVariable("TEST_DB_HOST") ?? "localhost";
         var userName = Environment.GetEnvironmentVariable("TEST_DB_USER") ?? "postgres";
         var pw = Environment.GetEnvironmentVariable("TEST_DB_PW");
+        var graphqlHost = Environment.GetEnvironmentVariable("TEST_GRAPHQL_HOST")!;
+        var jwtSecret = Environment.GetEnvironmentVariable("TEST_JWT_SECRET")!;
+        _configOptions = new GraphqlClientOptions {Host = graphqlHost, Port = 80, JwtIssuer = "issuer", JwtSecret = jwtSecret};
         var connectionString = $"Host={host};Username={userName};Database={GetType().Name};";
         if (!string.IsNullOrEmpty(pw))
         {
@@ -38,8 +42,7 @@ public class MutationTest
         await context.Database.EnsureCreatedAsync();
         var serializedAvatarAddress = avatarAddress.ToString();
         var serializedAgentAddress = agentAddress.ToString();
-        var configOptions = new GraphqlClientOptions {Host = "http://heimdall-internal-validator-1.nine-chronicles.com", Port = 80, JwtIssuer = "issuer", JwtSecret = "onsolhjcqbrawkvznmhuukoqunyzyigmwfixgqwvnlqlbpvqfvhfcyslwmqerpyihowcyiksouulydbuuuvlgpfskhzrcrsjorqkwnfxkkosvkkdwcxhjitwyxbfezig"};
-        var client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(configOptions), new LoggerFactory());
+        var client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(_configOptions), new LoggerFactory());
         await Assert.ThrowsAsync<GraphQLException>(() => Mutation.PutAvatar(contextService, client, serializedAvatarAddress, serializedAgentAddress));
         Assert.Empty(context.Avatars);
         await context.Database.EnsureDeletedAsync();
@@ -76,8 +79,7 @@ public class MutationTest
         }
         var serializedAvatarAddress = avatarAddress.ToString();
         var serializedAgentAddress = agentAddress.ToString();
-        var configOptions = new GraphqlClientOptions {Host = "http://heimdall-internal-validator-1.nine-chronicles.com", Port = 80, JwtIssuer = "issuer", JwtSecret = "onsolhjcqbrawkvznmhuukoqunyzyigmwfixgqwvnlqlbpvqfvhfcyslwmqerpyihowcyiksouulydbuuuvlgpfskhzrcrsjorqkwnfxkkosvkkdwcxhjitwyxbfezig"};
-        var client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(configOptions), new LoggerFactory());
+        var client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(_configOptions), new LoggerFactory());
         await contextService.PutClaimPolicy(new List<RewardBaseModel>(), true, TimeSpan.FromHours(12), true, 1,
             "password", DateTime.UtcNow, DateTime.MaxValue);
         var result = await Mutation.PutAvatar(contextService, client, serializedAvatarAddress, serializedAgentAddress);
@@ -133,8 +135,7 @@ public class MutationTest
         await context.RewardPolicies.AddAsync(policy);
         await context.Avatars.AddAsync(avatar);
         // await context.SaveChangesAsync();
-        var configOptions = new GraphqlClientOptions {Host = "http://heimdall-internal-validator-1.nine-chronicles.com", Port = 80, JwtIssuer = "issuer", JwtSecret = "onsolhjcqbrawkvznmhuukoqunyzyigmwfixgqwvnlqlbpvqfvhfcyslwmqerpyihowcyiksouulydbuuuvlgpfskhzrcrsjorqkwnfxkkosvkkdwcxhjitwyxbfezig"};
-        var client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(configOptions), new LoggerFactory());
+        var client = new NineChroniclesClient(new OptionsWrapper<GraphqlClientOptions>(_configOptions), new LoggerFactory());
         var privateKey = new PrivateKey();
         var signerOptions = new SignerOptions
         {
@@ -142,7 +143,7 @@ public class MutationTest
             GenesisHash = "4582250d0da33b06779a8475d283d5dd210c683b9b999d74d03fac4f58fa6bce"
         };
         var signer = new Signer(new OptionsWrapper<SignerOptions>(signerOptions));
-        var txId = await Mutation.ClaimTx(contextService, signer, avatarAddress.ToString(), avatar, policy, new NineChroniclesClient.Avatar());
+        var txId = await Mutation.ClaimTx(contextService, signer, avatarAddress.ToString(), avatar, policy, new NineChroniclesClient.Avatar(), client);
         Assert.Equal(1, avatar.ClaimCount);
         Assert.Equal(1, context.Transactions.Count(t => t.ClaimCount == 0));
         await Mutation.RetryTransaction(contextService, signer, client, txId, "password");

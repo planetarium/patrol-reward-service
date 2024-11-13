@@ -80,14 +80,15 @@ public class Mutation
         var policy = contextService.GetPolicy(free, avatarState.Level);
 
         // prepare claim.
-        var txId = await ClaimTx(contextService, signer, avatarAddress, avatar, policy, avatarState);
+        var txId = await ClaimTx(contextService, signer, avatarAddress, avatar, policy, avatarState, client);
         return txId.ToHex();
     }
 
     public static async Task<TxId> ClaimTx(ContextService contextService, Signer signer, string avatarAddress,
-        AvatarModel avatar, RewardPolicyModel policy, NineChroniclesClient.Avatar avatarState)
+        AvatarModel avatar, RewardPolicyModel policy, NineChroniclesClient.Avatar avatarState,
+        NineChroniclesClient client)
     {
-        // check claim interval 
+        // check claim interval
         var lastClaimedAt = avatar.LastClaimedAt ?? avatar.CreatedAt;
         var now = DateTime.UtcNow;
         var diff = now - lastClaimedAt;
@@ -125,7 +126,7 @@ public class Mutation
         // prepare action plain value.
         var memo = $"patrol reward {avatarAddress} / {avatar.ClaimCount}";
         var action = claim.ToClaimItems(avatarState.Address, avatarState.AgentAddress, memo);
-        long nonce = await contextService.GetNonce();
+        long nonce = await contextService.GetNonce(client);
         var tx = signer.Sign(nonce, new[] {action}, 1 * Currencies.Mead, 4L, now + TimeSpan.FromDays(1));
         transaction.TxId = tx.Id;
         transaction.Payload = Convert.ToBase64String(tx.Serialize());
