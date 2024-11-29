@@ -64,6 +64,7 @@ public class Mutation
         bool free = true
     )
     {
+        throw new GraphQLException("Maintenance.");
         // Check registered player.
         var avatar = contextService.GetAvatar(avatarAddress, agentAddress, true);
         if (avatar is null) throw new GraphQLException("Avatar not found. register avatar first.");
